@@ -29,6 +29,12 @@ constexpr DWORD kDwmCornerRound = 2;
 
 float scale_of(HWND h) { return GetDpiForWindow(h) / 96.0f; }
 
+// 对单个窗口应用 Win11 圆角（DWMWA_WINDOW_CORNER_PREFERENCE = DWMWCP_ROUND）。
+// 幂等；Windows 10 及更早忽略该属性，返回值无需处理。
+void set_corners_rounded(HWND h) {
+    DwmSetWindowAttribute(h, kDwmCornerPreference, &kDwmCornerRound, sizeof(kDwmCornerRound));
+}
+
 // 命中测试：四周边缘 -> 缩放；标题栏 -> 系统拖动；标题栏右侧按钮与其余区域 -> 交给 Slint。
 LRESULT hit_test(HWND h, POINT screen_pt) {
     const float s = scale_of(h);
@@ -93,6 +99,16 @@ BOOL CALLBACK first_visible_window(HWND h, LPARAM out) {
     return FALSE;
 }
 
+// EnumThreadWindows 回调：对每个可见、尺寸非零的顶层窗口应用圆角。
+BOOL CALLBACK round_if_visible(HWND h, LPARAM) {
+    if (!IsWindowVisible(h)) return TRUE;
+    RECT r{};
+    GetWindowRect(h, &r);
+    if (r.right - r.left <= 0 || r.bottom - r.top <= 0) return TRUE;
+    set_corners_rounded(h);
+    return TRUE;
+}
+
 }  // namespace
 
 bool attach_main_window(int title_height, int caption_buttons_width) {
@@ -105,7 +121,7 @@ bool attach_main_window(int title_height, int caption_buttons_width) {
     g_title_height = title_height;
     g_caption_buttons_width = caption_buttons_width;
 
-    DwmSetWindowAttribute(g_hwnd, kDwmCornerPreference, &kDwmCornerRound, sizeof(kDwmCornerRound));
+    set_corners_rounded(g_hwnd);
     SetWindowSubclass(g_hwnd, subclass_proc, kSubclassId, 0);
     // 让系统重新评估非客户区，使圆角与命中测试立即生效。
     SetWindowPos(g_hwnd, nullptr, 0, 0, 0, 0,
@@ -114,6 +130,10 @@ bool attach_main_window(int title_height, int caption_buttons_width) {
 }
 
 bool attached() { return g_hwnd != nullptr && IsWindow(g_hwnd); }
+
+void round_thread_windows() {
+    EnumThreadWindows(GetCurrentThreadId(), round_if_visible, 0);
+}
 
 void minimize() {
     if (attached()) ShowWindow(g_hwnd, SW_MINIMIZE);

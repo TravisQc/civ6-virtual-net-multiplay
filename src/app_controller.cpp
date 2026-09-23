@@ -127,6 +127,7 @@ void AppController::setup() {
     // 日志泵：100ms 抽干队列（对齐 Python 的 after(100)）。
     log_timer_.start(slint::TimerMode::Repeated, std::chrono::milliseconds(100), [this] {
         if (!chrome::attached()) chrome::attach_main_window();  // 原生窗口可能延迟创建
+        chrome::round_thread_windows();  // 让次级窗口（如进程选择窗口）也获得 Win11 圆角
         pump_logs();
     });
 }

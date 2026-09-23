@@ -12,6 +12,10 @@ namespace civ6::chrome {
 bool attach_main_window(int title_height = 48, int caption_buttons_width = 3 * 46);
 bool attached();
 
+// 对本线程当前所有可见顶层窗口应用 Win11 圆角（幂等；旧系统忽略）。
+// 覆盖主窗口之外按需创建的次级窗口（如进程选择窗口），使其也获得圆角。
+void round_thread_windows();
+
 void minimize();
 void toggle_maximize();
 
