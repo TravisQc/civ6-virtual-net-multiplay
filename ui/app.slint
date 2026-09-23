@@ -37,6 +37,7 @@ component DecoGraphic inherits VerticalLayout {
 
 export component AppWindow inherits Window {
     title: "文明6 虚拟组网联机代理 v1.2 修正版";
+    icon: @image-url("assets/app_icon.png");
     no-frame: true;
     default-font-size: Theme.font;
     background: Theme.window-bg;
@@ -91,17 +92,13 @@ export component AppWindow inherits Window {
                         padding-left: 16px;
                         spacing: 10px;
                         alignment: start;
-                        if !Theme.dark: Image {
-                            source: @image-url("assets/feather_light.svg");
-                            width: 18px;
-                            height: 18px;
-                            vertical-alignment: center;
-                        }
-                        if Theme.dark: Image {
-                            source: @image-url("assets/feather_dark.svg");
-                            width: 18px;
-                            height: 18px;
-                            vertical-alignment: center;
+                        VerticalLayout {
+                            alignment: center;
+                            Image {
+                                source: @image-url("assets/app_icon.png");
+                                width: 22px;
+                                height: 22px;
+                            }
                         }
                         Text {
                             text: root.title;

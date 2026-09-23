@@ -98,7 +98,7 @@ export component SettingsPage inherits Rectangle {
                                 source: @image-url("assets/icon_network.svg");
                                 width: 18px;
                                 height: 18px;
-                                vertical-alignment: center;
+                                y: (parent.height - self.height) / 2;
                             }
                             Text {
                                 text: "运行模式";
@@ -121,17 +121,17 @@ export component SettingsPage inherits Rectangle {
                                 if root.mode == "windivert": Image {
                                     source: @image-url("assets/icon_monitor_accent.svg");
                                     width: 28px; height: 28px;
-                                    vertical-alignment: center;
+                                    y: (parent.height - self.height) / 2;
                                 }
                                 if root.mode != "windivert" && !Theme.dark: Image {
                                     source: @image-url("assets/icon_monitor_light.svg");
                                     width: 28px; height: 28px;
-                                    vertical-alignment: center;
+                                    y: (parent.height - self.height) / 2;
                                 }
                                 if root.mode != "windivert" && Theme.dark: Image {
                                     source: @image-url("assets/icon_monitor_dark.svg");
                                     width: 28px; height: 28px;
-                                    vertical-alignment: center;
+                                    y: (parent.height - self.height) / 2;
                                 }
                             }
                             ModeCard {
@@ -144,17 +144,17 @@ export component SettingsPage inherits Rectangle {
                                 if root.mode == "relay": Image {
                                     source: @image-url("assets/icon_server_accent.svg");
                                     width: 28px; height: 28px;
-                                    vertical-alignment: center;
+                                    y: (parent.height - self.height) / 2;
                                 }
                                 if root.mode != "relay" && !Theme.dark: Image {
                                     source: @image-url("assets/icon_server_light.svg");
                                     width: 28px; height: 28px;
-                                    vertical-alignment: center;
+                                    y: (parent.height - self.height) / 2;
                                 }
                                 if root.mode != "relay" && Theme.dark: Image {
                                     source: @image-url("assets/icon_server_dark.svg");
                                     width: 28px; height: 28px;
-                                    vertical-alignment: center;
+                                    y: (parent.height - self.height) / 2;
                                 }
                             }
                         }
@@ -223,7 +223,7 @@ export component SettingsPage inherits Rectangle {
                                 source: @image-url("assets/icon_network.svg");
                                 width: 18px;
                                 height: 18px;
-                                vertical-alignment: center;
+                                y: (parent.height - self.height) / 2;
                             }
                             Text {
                                 text: "中转参数";
