@@ -1,0 +1,56 @@
+import { Theme, Icon } from "theme.slint";
+import { LogLine } from "structs.slint";
+import { ScrollView } from "std-widgets.slint";
+
+export component LogsPage inherits Rectangle {
+    in property <[LogLine]> lines;
+
+    // VS Code 深色日志配色（对齐 Python 版 tag 颜色）
+    function level-color(level: string) -> color {
+        if (level == "info") { return #4ec9b0; }
+        if (level == "warn") { return #dcdcaa; }
+        if (level == "error") { return #f48771; }
+        return #808080; // debug
+    }
+
+    VerticalLayout {
+        padding: 28px;
+        spacing: 18px;
+
+        VerticalLayout {
+            spacing: 4px;
+            Text { text: "运行日志"; font-size: Theme.font-title; font-weight: 800; color: Theme.text-primary; }
+            Text { text: "代理运行过程中的实时输出"; font-size: Theme.font; color: Theme.text-secondary; }
+        }
+
+        Rectangle {
+            background: #1e1e1e;
+            border-radius: Theme.radius;
+            clip: true;
+            ScrollView {
+                VerticalLayout {
+                    padding: 12px;
+                    spacing: 2px;
+                    for line in root.lines: HorizontalLayout {
+                        spacing: 8px;
+                        alignment: start;
+                        Text {
+                            text: "[" + line.time + "]";
+                            font-family: "Consolas";
+                            font-size: 14px;
+                            color: #808080;
+                        }
+                        Text {
+                            text: line.text;
+                            font-family: "Consolas";
+                            font-size: 14px;
+                            color: level-color(line.level);
+                            wrap: word-wrap;
+                            horizontal-stretch: 1;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

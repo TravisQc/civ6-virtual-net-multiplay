@@ -1,0 +1,17 @@
+// 共享数据结构
+
+// 一行日志
+export struct LogLine {
+    level: string,   // "info" | "warn" | "error" | "debug"
+    time: string,    // 时:分:秒
+    text: string,
+}
+
+// 进程选择器的一行
+export struct ProcRow {
+    name: string,
+    pid: string,
+    ports: string,
+    icon: image,
+    has-icon: bool,
+}

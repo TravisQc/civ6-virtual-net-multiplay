@@ -1,0 +1,90 @@
+import { Theme, Icon } from "theme.slint";
+import { Card, PrimaryButton, SecondaryButton } from "components.slint";
+import { ProcRow } from "structs.slint";
+import { ListView } from "std-widgets.slint";
+
+export component ProcessPickerWindow inherits Window {
+    title: "选择要代理的程序";
+    default-font-size: Theme.font;
+    background: Theme.window-bg;
+    preferred-width: 760px;
+    preferred-height: 560px;
+    min-width: 640px;
+    min-height: 420px;
+
+    in property <[ProcRow]> procs;
+    out property <int> selected-index: -1;
+    callback confirm(int);   // 使用选中行的端口
+    callback cancel();
+
+    VerticalLayout {
+        padding: 20px;
+        spacing: 12px;
+
+        Text {
+            text: "选择一个正在运行的程序，读取它占用的 UDP 端口填入端口框：";
+            font-size: Theme.font;
+            color: Theme.text-primary;
+        }
+        Text {
+            text: "提示：同机模式(WinDivert)不绑定端口、与游戏无冲突，通常只需发现端口 62900；中转模式下这些端口正被占用，需在不运行该程序的设备上启动。";
+            font-size: Theme.font-sm;
+            color: Theme.danger;
+            wrap: word-wrap;
+        }
+
+        // 表头
+        HorizontalLayout {
+            padding-left: 12px; padding-right: 12px;
+            Text { text: "程序"; width: 46%; font-weight: 700; color: Theme.text-secondary; font-size: Theme.font-sm; }
+            Text { text: "PID"; width: 18%; font-weight: 700; color: Theme.text-secondary; font-size: Theme.font-sm; }
+            Text { text: "UDP 端口"; font-weight: 700; color: Theme.text-secondary; font-size: Theme.font-sm; }
+        }
+
+        Card {
+            vertical-stretch: 1;
+            clip: true;
+            ListView {
+                for proc[idx] in root.procs: Rectangle {
+                    height: 42px;
+                    background: idx == root.selected-index ? Theme.accent-soft
+                        : (rowtouch.has-hover ? #f5f8fc : transparent);
+                    HorizontalLayout {
+                        padding-left: 12px; padding-right: 12px;
+                        spacing: 0px;
+                        HorizontalLayout {
+                            width: 46%;
+                            spacing: 10px;
+                            alignment: start;
+                            Image {
+                                source: proc.icon;
+                                width: 22px; height: 22px;
+                                visible: proc.has-icon;
+                            }
+                            // 无图标时占位对齐
+                            Rectangle { width: proc.has-icon ? 0px : 22px; }
+                            Text { text: proc.name; vertical-alignment: center; color: Theme.text-primary; overflow: elide; }
+                        }
+                        Text { text: proc.pid; width: 18%; vertical-alignment: center; color: Theme.text-secondary; }
+                        Text { text: proc.ports; vertical-alignment: center; color: Theme.text-secondary; overflow: elide; }
+                    }
+                    rowtouch := TouchArea {
+                        clicked => { root.selected-index = idx; }
+                        double-clicked => { root.selected-index = idx; root.confirm(idx); }
+                    }
+                }
+            }
+        }
+
+        HorizontalLayout {
+            spacing: 12px;
+            alignment: end;
+            SecondaryButton { text: "取消"; clicked => { root.cancel(); } }
+            PrimaryButton {
+                text: "使用这些端口";
+                enabled: root.selected-index >= 0;
+                clicked => { root.confirm(root.selected-index); }
+            }
+        }
+    }
+}

@@ -1,0 +1,49 @@
+import { Theme, Icon } from "theme.slint";
+import { Card } from "components.slint";
+
+component InfoRow inherits HorizontalLayout {
+    in property <string> key;
+    in property <string> value;
+    spacing: 12px;
+    Text { text: root.key; width: 96px; font-size: Theme.font; color: Theme.text-secondary; }
+    Text { text: root.value; font-size: Theme.font; font-weight: 600; color: Theme.text-primary; horizontal-stretch: 1; wrap: word-wrap; }
+}
+
+export component AboutPage inherits Rectangle {
+    in property <string> version;
+
+    VerticalLayout {
+        padding: 28px;
+        spacing: 18px;
+        alignment: start;
+
+        VerticalLayout {
+            spacing: 4px;
+            Text { text: "关于软件"; font-size: Theme.font-title; font-weight: 800; color: Theme.text-primary; }
+            Text { text: "文明6 虚拟组网联机代理"; font-size: Theme.font; color: Theme.text-secondary; }
+        }
+
+        Card {
+            VerticalLayout {
+                padding: 22px;
+                spacing: 14px;
+                HorizontalLayout {
+                    spacing: 14px;
+                    Icon { glyph: "\u{e774}"; font-size: 40px; color: Theme.accent; width: 48px; }
+                    VerticalLayout {
+                        alignment: center;
+                        spacing: 2px;
+                        Text { text: "文明6 虚拟组网联机代理"; font-size: Theme.font-lg; font-weight: 700; color: Theme.text-primary; }
+                        Text { text: "让文明的世界连接得更近"; font-size: Theme.font-sm; color: Theme.text-secondary; }
+                    }
+                }
+                Rectangle { height: 1px; background: Theme.card-border; }
+                InfoRow { key: "版本"; value: root.version; }
+                InfoRow { key: "许可"; value: "MIT License"; }
+                InfoRow { key: "原作者"; value: "chenxi65535（核心转发逻辑）"; }
+                InfoRow { key: "说明"; value: "把文明6 的局域网 UDP 发现/联机流量在虚拟组网（如 ZeroTier）之间互转，让异地玩家像局域网一样联机。"; }
+                InfoRow { key: "用法"; value: "同机模式需以管理员运行并填写其他玩家的虚拟 IP；中转模式在不运行游戏的独立设备上运行。端口默认 62900。"; }
+            }
+        }
+    }
+}

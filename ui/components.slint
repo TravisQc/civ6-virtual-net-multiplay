@@ -1,0 +1,282 @@
+import { Theme, Icon } from "theme.slint";
+
+// 通用卡片容器
+export component Card inherits Rectangle {
+    background: Theme.card-bg;
+    border-color: Theme.card-border;
+    border-width: 1px;
+    border-radius: Theme.radius;
+}
+
+// 左侧导航项
+export component NavItem inherits Rectangle {
+    in property <string> glyph;
+    in property <string> label;
+    in property <bool> selected;
+    callback clicked;
+    height: 46px;
+    border-radius: Theme.radius;
+    background: selected ? Theme.nav-selected-bg : (touch.has-hover ? #ffffff : transparent);
+    animate background { duration: 120ms; }
+    HorizontalLayout {
+        padding-left: 14px;
+        padding-right: 14px;
+        spacing: 12px;
+        alignment: start;
+        Icon {
+            glyph: root.glyph;
+            width: 22px;
+            color: selected ? Theme.accent : Theme.text-secondary;
+            font-size: 18px;
+        }
+        Text {
+            text: root.label;
+            vertical-alignment: center;
+            color: selected ? Theme.accent : Theme.text-primary;
+            font-size: Theme.font;
+            font-weight: selected ? 700 : 500;
+        }
+    }
+    touch := TouchArea { clicked => { root.clicked(); } }
+}
+
+// 运行模式选择卡（单选）
+export component ModeCard inherits Rectangle {
+    in property <string> glyph;
+    in property <string> title;
+    in property <string> subtitle;
+    in property <bool> selected;
+    callback clicked;
+    border-radius: Theme.radius;
+    border-width: selected ? 2px : 1px;
+    border-color: selected ? Theme.accent-border : Theme.card-border;
+    background: selected ? Theme.accent-soft : (touch.has-hover ? #f7fafd : Theme.card-bg);
+    animate background, border-color { duration: 120ms; }
+    HorizontalLayout {
+        padding: 16px;
+        spacing: 14px;
+        // 单选圆点
+        Rectangle {
+            width: 22px;
+            height: 22px;
+            y: 2px;
+            border-radius: 11px;
+            border-width: 2px;
+            border-color: selected ? Theme.accent : Theme.input-border;
+            background: white;
+            Rectangle {
+                width: 11px; height: 11px; border-radius: 6px;
+                background: selected ? Theme.accent : transparent;
+            }
+        }
+        Icon {
+            glyph: root.glyph;
+            width: 30px;
+            font-size: 26px;
+            color: selected ? Theme.accent : Theme.text-secondary;
+        }
+        VerticalLayout {
+            spacing: 3px;
+            alignment: center;
+            Text {
+                text: root.title;
+                font-size: Theme.font;
+                font-weight: 700;
+                color: Theme.text-primary;
+            }
+            Text {
+                text: root.subtitle;
+                font-size: Theme.font-sm;
+                color: Theme.text-secondary;
+            }
+        }
+    }
+    touch := TouchArea { clicked => { root.clicked(); } }
+}
+
+// 信息条（浅蓝底 + info 图标）
+export component InfoBanner inherits Rectangle {
+    in property <string> text;
+    background: Theme.accent-soft;
+    border-radius: Theme.radius;
+    HorizontalLayout {
+        padding: 14px;
+        spacing: 10px;
+        alignment: start;
+        Icon {
+            glyph: "\u{e946}";
+            width: 20px;
+            font-size: 18px;
+            color: Theme.accent;
+            y: 2px;
+            vertical-alignment: top;
+        }
+        Text {
+            text: root.text;
+            wrap: word-wrap;
+            font-size: Theme.font-sm;
+            color: Theme.text-secondary;
+        }
+    }
+}
+
+// 主按钮（蓝）
+export component PrimaryButton inherits Rectangle {
+    in property <string> glyph;
+    in property <string> text;
+    in property <bool> enabled: true;
+    callback clicked;
+    height: 44px;
+    border-radius: Theme.radius;
+    background: !enabled ? #a9c7e4
+        : (touch.pressed ? Theme.accent-pressed : (touch.has-hover ? Theme.accent-hover : Theme.accent));
+    animate background { duration: 100ms; }
+    HorizontalLayout {
+        padding-left: 20px;
+        padding-right: 20px;
+        spacing: 8px;
+        alignment: center;
+        Icon { glyph: root.glyph; color: white; font-size: 16px; visible: root.glyph != ""; width: root.glyph != "" ? 16px : 0; }
+        Text { text: root.text; color: white; font-size: Theme.font; font-weight: 600; vertical-alignment: center; }
+    }
+    touch := TouchArea { enabled: root.enabled; clicked => { root.clicked(); } }
+}
+
+// 次按钮（描边）
+export component SecondaryButton inherits Rectangle {
+    in property <string> glyph;
+    in property <string> text;
+    in property <bool> enabled: true;
+    callback clicked;
+    height: 44px;
+    border-radius: Theme.radius;
+    border-width: 1px;
+    border-color: root.enabled ? Theme.input-border : #e0e4ea;
+    background: touch.has-hover && root.enabled ? #f3f6fa : Theme.card-bg;
+    animate background { duration: 100ms; }
+    HorizontalLayout {
+        padding-left: 18px;
+        padding-right: 18px;
+        spacing: 8px;
+        alignment: center;
+        Icon { glyph: root.glyph; color: root.enabled ? Theme.text-secondary : Theme.text-tertiary; font-size: 15px; visible: root.glyph != ""; width: root.glyph != "" ? 15px : 0; }
+        Text { text: root.text; color: root.enabled ? Theme.text-primary : Theme.text-tertiary; font-size: Theme.font; font-weight: 600; vertical-alignment: center; }
+    }
+    touch := TouchArea { enabled: root.enabled; clicked => { root.clicked(); } }
+}
+
+// 状态药丸（● 未运行 / 运行中）
+export component StatusPill inherits Rectangle {
+    in property <bool> running;
+    height: 40px;
+    border-radius: 20px;
+    background: running ? #eaf6ea : Theme.danger-soft;
+    HorizontalLayout {
+        padding-left: 16px;
+        padding-right: 16px;
+        spacing: 8px;
+        alignment: center;
+        Rectangle {
+            width: 10px; height: 10px; border-radius: 5px;
+            background: running ? Theme.success : Theme.danger;
+        }
+        Text {
+            text: running ? "运行中" : "未运行";
+            color: running ? Theme.success : Theme.danger;
+            font-size: Theme.font;
+            font-weight: 700;
+            vertical-alignment: center;
+        }
+    }
+}
+
+// 复选框
+export component CheckBox inherits Rectangle {
+    in property <string> label;
+    in-out property <bool> checked;
+    callback toggled(bool);
+    height: 28px;
+    HorizontalLayout {
+        spacing: 8px;
+        alignment: start;
+        Rectangle {
+            width: 20px; height: 20px; y: 4px;
+            border-radius: 4px;
+            border-width: 1.5px;
+            border-color: root.checked ? Theme.accent : Theme.input-border;
+            background: root.checked ? Theme.accent : white;
+            Icon {
+                glyph: "\u{e73e}";
+                color: white;
+                font-size: 13px;
+                visible: root.checked;
+            }
+        }
+        Text {
+            text: root.label;
+            vertical-alignment: center;
+            font-size: Theme.font;
+            color: Theme.text-primary;
+        }
+    }
+    TouchArea { clicked => { root.checked = !root.checked; root.toggled(root.checked); } }
+}
+
+// 标题栏按钮（最小化/最大化/关闭）
+export component CaptionButton inherits Rectangle {
+    in property <string> glyph;
+    in property <bool> is-close;
+    callback clicked;
+    width: 46px;
+    background: touch.has-hover ? (is-close ? #c42b1c : #00000014) : transparent;
+    animate background { duration: 80ms; }
+    Icon {
+        glyph: root.glyph;
+        font-size: 12px;
+        color: (root.is-close && touch.has-hover) ? white : Theme.text-primary;
+    }
+    touch := TouchArea { clicked => { root.clicked(); } }
+}
+
+// 输入框：白底 + 浅灰边框，聚焦时蓝色描边。
+// 不用 std-widgets 的 LineEdit：它跟随系统深浅色主题，系统为深色时会在白色卡片上变成白字白底（不可见）。
+export component TextBox inherits Rectangle {
+    in-out property <string> text <=> input.text;
+    in property <string> placeholder;
+    in property <bool> enabled: true;
+    callback edited(string);
+    callback accepted(string);
+    height: 40px;
+    border-radius: 6px;
+    border-width: input.has-focus ? 2px : 1px;
+    border-color: input.has-focus ? Theme.accent : Theme.input-border;
+    background: root.enabled ? Theme.input-bg : #f5f6f8;
+    animate border-color { duration: 100ms; }
+    // 放在 TextInput 之下：只接管内边距区域的点击（用于聚焦），不影响文字上的光标定位
+    TouchArea { mouse-cursor: MouseCursor.text; clicked => { input.focus(); } }
+    HorizontalLayout {
+        padding-left: 12px;
+        padding-right: 12px;
+        Rectangle {
+            clip: true;
+            input := TextInput {
+                vertical-alignment: center;
+                font-size: Theme.font;
+                color: Theme.text-primary;
+                selection-background-color: Theme.accent;
+                selection-foreground-color: white;
+                single-line: true;
+                enabled: root.enabled;
+                edited => { root.edited(self.text); }
+                accepted => { root.accepted(self.text); }
+            }
+            Text {
+                text: root.placeholder;
+                visible: root.text == "";
+                vertical-alignment: center;
+                font-size: Theme.font;
+                color: Theme.text-tertiary;
+            }
+        }
+    }
+}

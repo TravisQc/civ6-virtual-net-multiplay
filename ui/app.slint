@@ -1,0 +1,162 @@
+import { Theme, Icon } from "theme.slint";
+import { NavItem, CaptionButton } from "components.slint";
+import { LogLine } from "structs.slint";
+import { SettingsPage } from "settings-page.slint";
+import { LogsPage } from "logs-page.slint";
+import { AboutPage } from "about-page.slint";
+import { Palette } from "std-widgets.slint";
+
+export { ProcessPickerWindow } from "process-picker.slint";
+export { LogLine, ProcRow } from "structs.slint";
+
+// 左下角装饰图：地球 + 两台显示器（近似参考图）
+component DecoGraphic inherits VerticalLayout {
+    spacing: 6px;
+    alignment: center;
+    Icon { glyph: "\u{e774}"; font-size: 44px; color: #abc6e8; height: 52px; }
+    HorizontalLayout {
+        alignment: center;
+        spacing: 18px;
+        Icon { glyph: "\u{e977}"; font-size: 24px; color: #aec8e8; }
+        Icon { glyph: "\u{e977}"; font-size: 24px; color: #aec8e8; }
+    }
+    Text {
+        text: "让文明的世界\n连接得更近";
+        horizontal-alignment: center;
+        font-size: Theme.font-sm;
+        color: Theme.text-tertiary;
+    }
+}
+
+export component AppWindow inherits Window {
+    title: "文明6 虚拟组网联机代理 v1.2 修正版";
+    no-frame: true;
+    default-font-size: Theme.font;
+    background: Theme.window-bg;
+    preferred-width: 1180px;
+    preferred-height: 780px;
+    min-width: 940px;
+    min-height: 620px;
+
+    // 界面为固定浅色设计；std-widgets 默认跟随系统深浅色，这里强制浅色以免深色系统下颜色错乱。
+    init => { Palette.color-scheme = ColorScheme.light; }
+
+    // 配置数据（与 C++ 双向绑定）
+    in-out property <string> mode: "windivert";
+    in-out property <string> peer_vips;
+    in-out property <string> server_vip;
+    in-out property <string> client_ip;
+    in-out property <string> ports: "62900";
+    in-out property <bool> verbose;
+    in property <bool> running;
+    in property <string> local_ips_hint: "本机检测到的局域网 IP: 未检测到";
+    in property <string> version: "1.2 修正版";
+    in property <[LogLine]> log_lines;
+    in-out property <int> current_page: 0;    // 0 设置 / 1 日志 / 2 关于
+
+    // 行为回调
+    callback start_proxy();
+    callback stop_proxy();
+    callback pick_process();
+    callback verbose_changed(bool);
+    callback open_settings();
+    callback open_help();
+    // 窗口控制（C++ 用 Win32 处理）
+    callback minimize();
+    callback maximize();
+    callback close_window();
+
+    VerticalLayout {
+        spacing: 0px;
+
+        // ---------------- 标题栏 ----------------
+        Rectangle {
+            height: 48px;
+            background: Theme.sidebar-bg;
+            HorizontalLayout {
+                // 拖动区：由 win_chrome 的 WM_NCHITTEST 判为 HTCAPTION，系统负责拖动/双击最大化
+                Rectangle {
+                    horizontal-stretch: 1;
+                    HorizontalLayout {
+                        padding-left: 16px;
+                        spacing: 10px;
+                        alignment: start;
+                        Icon { glyph: "\u{e774}"; font-size: 18px; color: Theme.accent; width: 22px; }
+                        Text {
+                            text: root.title;
+                            vertical-alignment: center;
+                            font-size: Theme.font;
+                            font-weight: 700;
+                            color: Theme.text-primary;
+                        }
+                    }
+                }
+                CaptionButton { glyph: "\u{e921}"; clicked => { root.minimize(); } }         // 最小化
+                CaptionButton { glyph: "\u{e922}"; clicked => { root.maximize(); } }         // 最大化
+                CaptionButton { glyph: "\u{e8bb}"; is-close: true; clicked => { root.close_window(); } } // 关闭
+            }
+        }
+
+        // ---------------- 主体 ----------------
+        HorizontalLayout {
+            spacing: 0px;
+
+            // 侧边栏
+            Rectangle {
+                width: 232px;
+                background: Theme.sidebar-bg;
+                VerticalLayout {
+                    padding: 12px;
+                    spacing: 6px;
+                    NavItem {
+                        glyph: "\u{e80f}"; label: "代理设置";
+                        selected: root.current_page == 0;
+                        clicked => { root.current_page = 0; }
+                    }
+                    NavItem {
+                        glyph: "\u{e7c3}"; label: "运行日志";
+                        selected: root.current_page == 1;
+                        clicked => { root.current_page = 1; }
+                    }
+                    NavItem {
+                        glyph: "\u{e946}"; label: "关于软件";
+                        selected: root.current_page == 2;
+                        clicked => { root.current_page = 2; }
+                    }
+                    Rectangle {}  // spacer
+                    DecoGraphic {}
+                    Rectangle { height: 16px; }
+                }
+            }
+
+            // 内容区
+            Rectangle {
+                background: Theme.window-bg;
+                horizontal-stretch: 1;
+
+                if root.current_page == 0: SettingsPage {
+                    mode <=> root.mode;
+                    peer_vips <=> root.peer_vips;
+                    server_vip <=> root.server_vip;
+                    client_ip <=> root.client_ip;
+                    ports <=> root.ports;
+                    verbose <=> root.verbose;
+                    running: root.running;
+                    local_ips_hint: root.local_ips_hint;
+                    start_proxy => { root.start_proxy(); }
+                    stop_proxy => { root.stop_proxy(); }
+                    pick_process => { root.pick_process(); }
+                    open_settings => { root.open_settings(); }
+                    open_help => { root.open_help(); }
+                    verbose_changed(v) => { root.verbose_changed(v); }
+                }
+                if root.current_page == 1: LogsPage {
+                    lines: root.log_lines;
+                }
+                if root.current_page == 2: AboutPage {
+                    version: root.version;
+                }
+            }
+        }
+    }
+}

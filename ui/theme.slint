@@ -1,0 +1,51 @@
+// Fluent 风格设计 tokens（对照参考图）。
+export global Theme {
+    // 主色（Fluent accent 蓝）
+    out property <color> accent: #0f6cbd;
+    out property <color> accent-hover: #115ea3;
+    out property <color> accent-pressed: #0e4775;
+    out property <color> accent-soft: #eff6fc;      // 选中卡片/信息条浅蓝底
+    out property <color> accent-border: #0f6cbd;
+
+    // 背景层次
+    out property <color> window-bg: #eef2f8;
+    out property <color> window-bg2: #e7edf6;
+    out property <color> sidebar-bg: #f5f8fc;
+    out property <color> card-bg: #ffffff;
+    out property <color> card-border: #e3e8ef;
+    out property <color> input-bg: #ffffff;
+    out property <color> input-border: #c9d1dc;
+
+    // 文本
+    out property <color> text-primary: #1b1b1f;
+    out property <color> text-secondary: #5b6472;
+    out property <color> text-tertiary: #8a929e;
+
+    // 状态
+    out property <color> danger: #c0392b;
+    out property <color> danger-soft: #fdecea;
+    out property <color> success: #107c10;
+    out property <color> nav-selected-bg: #e4edf9;
+
+    // 间距/圆角/字号
+    out property <length> radius: 8px;
+    out property <length> radius-lg: 12px;
+    out property <length> gap: 12px;
+    out property <length> pad: 16px;
+    out property <length> font: 15px;
+    out property <length> font-sm: 13px;
+    out property <length> font-lg: 18px;
+    out property <length> font-title: 26px;
+
+    // Windows 11 图标字体
+    out property <string> icon-font: "Segoe Fluent Icons";
+}
+
+// 单个 Fluent 图标（用 Segoe Fluent Icons 字形）。
+export component Icon inherits Text {
+    in property <string> glyph;
+    text: glyph;
+    font-family: Theme.icon-font;
+    horizontal-alignment: center;
+    vertical-alignment: center;
+}
