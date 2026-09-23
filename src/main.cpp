@@ -69,7 +69,7 @@ int main(int argc, char** argv) {
 
     window->show();
     // 附加无边框窗口的 Win32 胶水（圆角/拖动/缩放）。若原生窗口延迟创建，控制器的定时器会重试。
-    civ6::chrome::attach_main_window();
+    civ6::chrome::attach_main_window(window->window().win32_hwnd());
 
     std::shared_ptr<slint::Timer> snap_timer;
     if (snapshot_mode) {

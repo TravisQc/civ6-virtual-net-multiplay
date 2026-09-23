@@ -13,6 +13,12 @@ struct Config {
     std::string peer_vips = "";
     std::string ports = "62900";
     bool dark_mode = false;
+
+    // 主窗口位置与尺寸（物理屏幕像素，含无边框窗口外沿）。宽/高为 0 表示未保存，启动时用默认布局。
+    int window_x = 0;
+    int window_y = 0;
+    int window_width = 0;
+    int window_height = 0;
 };
 
 // 返回 exe 同目录下的 civ6proxy_config.json 完整路径。

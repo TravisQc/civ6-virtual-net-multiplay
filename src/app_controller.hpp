@@ -29,6 +29,7 @@ private:
     void on_pick_process();
     void set_running(bool running);
     void save_current_config();
+    void restore_window_placement();
     void pump_logs();
     void append_log(LogLevel level, const std::string& msg);
 

@@ -75,6 +75,9 @@ void AppController::setup() {
     cfg_ = load_config();
     log_model_ = std::make_shared<slint::VectorModel<LogLine>>();
 
+    // 在窗口显示前恢复上次的位置与尺寸（main.cpp 在 setup() 之后才 show()），避免先在默认位置闪现。
+    restore_window_placement();
+
     // 载入配置到 UI
     window_->set_mode(slint::SharedString(cfg_.mode));
     window_->set_server_vip(slint::SharedString(cfg_.server_vip));
@@ -133,7 +136,8 @@ void AppController::setup() {
 
     // 日志泵：100ms 抽干队列（对齐 Python 的 after(100)）。
     log_timer_.start(slint::TimerMode::Repeated, std::chrono::milliseconds(100), [this] {
-        if (!chrome::attached()) chrome::attach_main_window();  // 原生窗口可能延迟创建
+        // 每个 tick 都尝试附加：win32_hwnd 可能延迟可用；attach 内部幂等并可自愈到正确的顶层窗口。
+        chrome::attach_main_window(window_->window().win32_hwnd());
         chrome::round_thread_windows();  // 让次级窗口（如进程选择窗口）也获得 Win11 圆角
         pump_logs();
     });
@@ -253,7 +257,32 @@ void AppController::save_current_config() {
     cfg_.peer_vips = std::string(window_->get_peer_vips());
     cfg_.ports = std::string(window_->get_ports());
     cfg_.dark_mode = window_->get_dark_mode();
+    // 记录窗口“正常”矩形（不受最大化/最小化影响）；无可用值时保留上次加载的位置尺寸。
+    RECT rc{};
+    if (chrome::get_normal_rect(rc)) {
+        cfg_.window_x = rc.left;
+        cfg_.window_y = rc.top;
+        cfg_.window_width = rc.right - rc.left;
+        cfg_.window_height = rc.bottom - rc.top;
+    }
     save_config(cfg_);
+}
+
+void AppController::restore_window_placement() {
+    // 宽/高为 0 表示尚无保存值（旧配置/首次运行）：沿用默认（居中）布局。
+    if (cfg_.window_width <= 0 || cfg_.window_height <= 0) return;
+    RECT rc{cfg_.window_x, cfg_.window_y,
+            cfg_.window_x + cfg_.window_width,
+            cfg_.window_y + cfg_.window_height};
+    // 保存的位置若已不在任一显示器上（如外接显示器被移除），回退默认，避免窗口出现在不可见区域。
+    if (!chrome::is_rect_visible(rc)) return;
+
+    auto& win = window_->window();
+    win.set_size(slint::PhysicalSize(slint::Size<uint32_t>{
+        static_cast<uint32_t>(cfg_.window_width),
+        static_cast<uint32_t>(cfg_.window_height)}));
+    win.set_position(slint::PhysicalPosition(slint::Point<int32_t>{
+        cfg_.window_x, cfg_.window_y}));
 }
 
 void AppController::pump_logs() {
