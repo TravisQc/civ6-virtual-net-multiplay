@@ -1,41 +1,67 @@
-// Fluent 风格设计 tokens（对照参考图）。
+// Fluent 风格设计 tokens（支持亮色/暗色动态切换，高保真对照参考图）。
 export global Theme {
+    // 主题模式控制
+    in-out property <bool> dark: false;
+
     // 主色（Fluent accent 蓝）
-    out property <color> accent: #0f6cbd;
-    out property <color> accent-hover: #115ea3;
-    out property <color> accent-pressed: #0e4775;
-    out property <color> accent-soft: #eff6fc;      // 选中卡片/信息条浅蓝底
-    out property <color> accent-border: #0f6cbd;
+    out property <color> accent: dark ? #2575fc : #1964ee;
+    out property <color> accent-hover: dark ? #3b82f6 : #1555ca;
+    out property <color> accent-pressed: dark ? #1d68d8 : #1248ac;
+    out property <color> accent-soft: dark ? #112440 : #edf5ff;      // 选中卡片/信息条背景
+    out property <color> accent-border: dark ? #2563eb : #2f80ed;
 
     // 背景层次
-    out property <color> window-bg: #eef2f8;
-    out property <color> window-bg2: #e7edf6;
-    out property <color> sidebar-bg: #f5f8fc;
-    out property <color> card-bg: #ffffff;
-    out property <color> card-border: #e3e8ef;
-    out property <color> input-bg: #ffffff;
-    out property <color> input-border: #c9d1dc;
+    out property <color> window-bg: dark ? #0d1522 : #ebf2fa;
+    out property <color> sidebar-bg: dark ? #0b111b : #ebf2fa;
+    out property <color> content-bg: dark ? #131b28 : #f6f8fc;
+    out property <color> card-bg: dark ? #172232 : #ffffff;
+    out property <color> card-border: dark ? #22334a : #e2e8f0;
+    out property <color> card-unselected-bg: dark ? #131d2b : #f8fafc;
+    out property <color> input-bg: dark ? #0f1724 : #ffffff;
+    out property <color> input-border: dark ? #263953 : #d1d9e4;
+    out property <color> input-border-focus: dark ? #2575fc : #1964ee;
+    out property <color> info-banner-bg: dark ? #142642 : #ebf3fe;
+    out property <color> info-banner-text: dark ? #94a3b8 : #334155;
 
-    // 文本
-    out property <color> text-primary: #1b1b1f;
-    out property <color> text-secondary: #5b6472;
-    out property <color> text-tertiary: #8a929e;
+    // 侧边栏导航
+    out property <color> nav-selected-bg: dark ? #152e5a : #dce8fa;
+    out property <color> nav-selected-text: dark ? #3b82f6 : #1964ee;
+    out property <color> nav-hover-bg: dark ? #151f2e : #e2ecf7;
 
-    // 状态
-    out property <color> danger: #c0392b;
-    out property <color> danger-soft: #fdecea;
-    out property <color> success: #107c10;
-    out property <color> nav-selected-bg: #e4edf9;
+    // 次级与禁用按钮
+    out property <color> btn-secondary-bg: dark ? #1b2636 : #f6f9fc;
+    out property <color> btn-secondary-border: dark ? #2a3d58 : #d1d9e4;
+    out property <color> btn-secondary-text: dark ? #e2e8f0 : #1e293b;
+    out property <color> btn-disabled-bg: dark ? #131b26 : #f1f5f9;
+    out property <color> btn-disabled-border: dark ? #1e2b3c : #e2e8f0;
+    out property <color> btn-disabled-text: dark ? #4a5a70 : #94a3b8;
+
+    // 状态药丸
+    out property <color> status-inactive-bg: dark ? #381c22 : #fee2e2;
+    out property <color> status-inactive-text: dark ? #ef4444 : #dc2626;
+    out property <color> status-running-bg: dark ? #143522 : #dcfce7;
+    out property <color> status-running-text: dark ? #22c55e : #16a34a;
+
+    // 文本色阶
+    out property <color> text-primary: dark ? #f1f5f9 : #0f172a;
+    out property <color> text-secondary: dark ? #8fa1b8 : #64748b;
+    out property <color> text-tertiary: dark ? #5a6d85 : #94a3b8;
+
+    // 分割线与功能色
+    out property <color> divider: dark ? #22334a : #e2e8f0;
+    out property <color> danger: dark ? #ef4444 : #dc2626;
+    out property <color> danger-soft: dark ? #381c22 : #fee2e2;
+    out property <color> success: dark ? #22c55e : #16a34a;
 
     // 间距/圆角/字号
     out property <length> radius: 8px;
     out property <length> radius-lg: 12px;
     out property <length> gap: 12px;
     out property <length> pad: 16px;
-    out property <length> font: 15px;
-    out property <length> font-sm: 13px;
-    out property <length> font-lg: 18px;
-    out property <length> font-title: 26px;
+    out property <length> font: 14px;
+    out property <length> font-sm: 12px;
+    out property <length> font-lg: 16px;
+    out property <length> font-title: 22px;
 
     // Windows 11 图标字体
     out property <string> icon-font: "Segoe Fluent Icons";

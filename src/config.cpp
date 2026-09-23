@@ -31,6 +31,7 @@ Config load_config() {
         if (j.contains("client_ip") && j["client_ip"].is_string())   cfg.client_ip = j["client_ip"].get<std::string>();
         if (j.contains("peer_vips") && j["peer_vips"].is_string())    cfg.peer_vips = j["peer_vips"].get<std::string>();
         if (j.contains("ports") && j["ports"].is_string())      cfg.ports = j["ports"].get<std::string>();
+        if (j.contains("dark_mode") && j["dark_mode"].is_boolean()) cfg.dark_mode = j["dark_mode"].get<bool>();
     } catch (...) {
         // 损坏则退回默认（对齐 Python except (OSError, ValueError): pass）
         return Config{};
@@ -45,6 +46,7 @@ void save_config(const Config& cfg) {
     j["client_ip"] = cfg.client_ip;
     j["peer_vips"] = cfg.peer_vips;
     j["ports"] = cfg.ports;
+    j["dark_mode"] = cfg.dark_mode;
     std::ofstream out(config_path(), std::ios::binary);
     if (!out) return;
     out << j.dump(2);

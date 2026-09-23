@@ -8,23 +8,30 @@ import { Palette } from "std-widgets.slint";
 
 export { ProcessPickerWindow } from "process-picker.slint";
 export { LogLine, ProcRow } from "structs.slint";
+export { Theme } from "theme.slint";
 
-// 左下角装饰图：地球 + 两台显示器（近似参考图）
+// 左下角装饰插画：地球 + 虚线网络 + 两台电脑
 component DecoGraphic inherits VerticalLayout {
-    spacing: 6px;
+    spacing: 8px;
     alignment: center;
-    Icon { glyph: "\u{e774}"; font-size: 44px; color: #abc6e8; height: 52px; }
-    HorizontalLayout {
-        alignment: center;
-        spacing: 18px;
-        Icon { glyph: "\u{e977}"; font-size: 24px; color: #aec8e8; }
-        Icon { glyph: "\u{e977}"; font-size: 24px; color: #aec8e8; }
+    if !Theme.dark: Image {
+        source: @image-url("assets/deco_light.svg");
+        width: 140px;
+        height: 102px;
+        horizontal-alignment: center;
+    }
+    if Theme.dark: Image {
+        source: @image-url("assets/deco_dark.svg");
+        width: 140px;
+        height: 102px;
+        horizontal-alignment: center;
     }
     Text {
         text: "让文明的世界\n连接得更近";
         horizontal-alignment: center;
         font-size: Theme.font-sm;
         color: Theme.text-tertiary;
+        animate color { duration: 120ms; }
     }
 }
 
@@ -33,13 +40,14 @@ export component AppWindow inherits Window {
     no-frame: true;
     default-font-size: Theme.font;
     background: Theme.window-bg;
-    preferred-width: 1180px;
-    preferred-height: 780px;
-    min-width: 940px;
-    min-height: 620px;
+    preferred-width: 1024px;
+    preferred-height: 600px;
+    min-width: 900px;
+    min-height: 560px;
 
-    // 界面为固定浅色设计；std-widgets 默认跟随系统深浅色，这里强制浅色以免深色系统下颜色错乱。
-    init => { Palette.color-scheme = ColorScheme.light; }
+    // 主题模式（与 Theme.dark 和 C++ 双向同步）
+    in-out property <bool> dark_mode <=> Theme.dark;
+    init => { Palette.color-scheme = root.dark_mode ? ColorScheme.dark : ColorScheme.light; }
 
     // 配置数据（与 C++ 双向绑定）
     in-out property <string> mode: "windivert";
@@ -61,6 +69,7 @@ export component AppWindow inherits Window {
     callback verbose_changed(bool);
     callback open_settings();
     callback open_help();
+    callback theme_changed(bool);
     // 窗口控制（C++ 用 Win32 处理）
     callback minimize();
     callback maximize();
@@ -73,6 +82,7 @@ export component AppWindow inherits Window {
         Rectangle {
             height: 48px;
             background: Theme.sidebar-bg;
+            animate background { duration: 120ms; }
             HorizontalLayout {
                 // 拖动区：由 win_chrome 的 WM_NCHITTEST 判为 HTCAPTION，系统负责拖动/双击最大化
                 Rectangle {
@@ -81,13 +91,25 @@ export component AppWindow inherits Window {
                         padding-left: 16px;
                         spacing: 10px;
                         alignment: start;
-                        Icon { glyph: "\u{e774}"; font-size: 18px; color: Theme.accent; width: 22px; }
+                        if !Theme.dark: Image {
+                            source: @image-url("assets/feather_light.svg");
+                            width: 18px;
+                            height: 18px;
+                            vertical-alignment: center;
+                        }
+                        if Theme.dark: Image {
+                            source: @image-url("assets/feather_dark.svg");
+                            width: 18px;
+                            height: 18px;
+                            vertical-alignment: center;
+                        }
                         Text {
                             text: root.title;
                             vertical-alignment: center;
                             font-size: Theme.font;
                             font-weight: 700;
                             color: Theme.text-primary;
+                            animate color { duration: 120ms; }
                         }
                     }
                 }
@@ -103,8 +125,9 @@ export component AppWindow inherits Window {
 
             // 侧边栏
             Rectangle {
-                width: 232px;
+                width: 200px;
                 background: Theme.sidebar-bg;
+                animate background { duration: 120ms; }
                 VerticalLayout {
                     padding: 12px;
                     spacing: 6px;
@@ -125,13 +148,14 @@ export component AppWindow inherits Window {
                     }
                     Rectangle {}  // spacer
                     DecoGraphic {}
-                    Rectangle { height: 16px; }
+                    Rectangle { height: 12px; }
                 }
             }
 
             // 内容区
             Rectangle {
-                background: Theme.window-bg;
+                background: Theme.content-bg;
+                animate background { duration: 120ms; }
                 horizontal-stretch: 1;
 
                 if root.current_page == 0: SettingsPage {
@@ -140,7 +164,6 @@ export component AppWindow inherits Window {
                     server_vip <=> root.server_vip;
                     client_ip <=> root.client_ip;
                     ports <=> root.ports;
-                    verbose <=> root.verbose;
                     running: root.running;
                     local_ips_hint: root.local_ips_hint;
                     start_proxy => { root.start_proxy(); }
@@ -148,10 +171,16 @@ export component AppWindow inherits Window {
                     pick_process => { root.pick_process(); }
                     open_settings => { root.open_settings(); }
                     open_help => { root.open_help(); }
-                    verbose_changed(v) => { root.verbose_changed(v); }
+                    toggle_theme => {
+                        root.dark_mode = !root.dark_mode;
+                        Palette.color-scheme = root.dark_mode ? ColorScheme.dark : ColorScheme.light;
+                        root.theme_changed(root.dark_mode);
+                    }
                 }
                 if root.current_page == 1: LogsPage {
                     lines: root.log_lines;
+                    verbose <=> root.verbose;
+                    verbose_changed(v) => { root.verbose_changed(v); }
                 }
                 if root.current_page == 2: AboutPage {
                     version: root.version;

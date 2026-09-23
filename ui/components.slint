@@ -5,7 +5,8 @@ export component Card inherits Rectangle {
     background: Theme.card-bg;
     border-color: Theme.card-border;
     border-width: 1px;
-    border-radius: Theme.radius;
+    border-radius: Theme.radius-lg;
+    animate background, border-color { duration: 120ms; }
 }
 
 // 左侧导航项
@@ -14,9 +15,9 @@ export component NavItem inherits Rectangle {
     in property <string> label;
     in property <bool> selected;
     callback clicked;
-    height: 46px;
+    height: 42px;
     border-radius: Theme.radius;
-    background: selected ? Theme.nav-selected-bg : (touch.has-hover ? #ffffff : transparent);
+    background: selected ? Theme.nav-selected-bg : (touch.has-hover ? Theme.nav-hover-bg : transparent);
     animate background { duration: 120ms; }
     HorizontalLayout {
         padding-left: 14px;
@@ -25,58 +26,67 @@ export component NavItem inherits Rectangle {
         alignment: start;
         Icon {
             glyph: root.glyph;
-            width: 22px;
-            color: selected ? Theme.accent : Theme.text-secondary;
+            width: 20px;
+            color: selected ? Theme.nav-selected-text : (touch.has-hover ? Theme.text-primary : Theme.text-secondary);
             font-size: 18px;
+            animate color { duration: 120ms; }
         }
         Text {
             text: root.label;
             vertical-alignment: center;
-            color: selected ? Theme.accent : Theme.text-primary;
+            color: selected ? Theme.nav-selected-text : (touch.has-hover ? Theme.text-primary : Theme.text-secondary);
             font-size: Theme.font;
             font-weight: selected ? 700 : 500;
+            animate color { duration: 120ms; }
         }
     }
-    touch := TouchArea { clicked => { root.clicked(); } }
+    touch := TouchArea { mouse-cursor: MouseCursor.pointer; clicked => { root.clicked(); } }
 }
 
 // 运行模式选择卡（单选）
 export component ModeCard inherits Rectangle {
-    in property <string> glyph;
     in property <string> title;
     in property <string> subtitle;
     in property <bool> selected;
     callback clicked;
     border-radius: Theme.radius;
-    border-width: selected ? 2px : 1px;
+    border-width: selected ? 1.5px : 1px;
     border-color: selected ? Theme.accent-border : Theme.card-border;
-    background: selected ? Theme.accent-soft : (touch.has-hover ? #f7fafd : Theme.card-bg);
+    background: selected ? Theme.accent-soft : (touch.has-hover ? (Theme.dark ? #162438 : #f1f6fd) : Theme.card-unselected-bg);
     animate background, border-color { duration: 120ms; }
     HorizontalLayout {
-        padding: 16px;
+        padding-left: 16px;
+        padding-right: 16px;
+        padding-top: 12px;
+        padding-bottom: 12px;
         spacing: 14px;
-        // 单选圆点
+        alignment: start;
+
+        // 单选圆点：选中为蓝底+白圆心，未选中为灰色圆环
         Rectangle {
-            width: 22px;
-            height: 22px;
-            y: 2px;
-            border-radius: 11px;
-            border-width: 2px;
-            border-color: selected ? Theme.accent : Theme.input-border;
-            background: white;
-            Rectangle {
-                width: 11px; height: 11px; border-radius: 6px;
-                background: selected ? Theme.accent : transparent;
+            width: 18px;
+            height: 18px;
+            y: (parent.height - self.height) / 2;
+            border-radius: 9px;
+            border-width: selected ? 0px : 1.5px;
+            border-color: Theme.dark ? #475569 : #cbd5e1;
+            background: selected ? Theme.accent : transparent;
+            animate background, border-color { duration: 100ms; }
+            if selected: Rectangle {
+                width: 6px;
+                height: 6px;
+                border-radius: 3px;
+                background: white;
+                x: (parent.width - self.width) / 2;
+                y: (parent.height - self.height) / 2;
             }
         }
-        Icon {
-            glyph: root.glyph;
-            width: 30px;
-            font-size: 26px;
-            color: selected ? Theme.accent : Theme.text-secondary;
-        }
+
+        // 图标插槽
+        @children
+
         VerticalLayout {
-            spacing: 3px;
+            spacing: 2px;
             alignment: center;
             Text {
                 text: root.title;
@@ -91,16 +101,20 @@ export component ModeCard inherits Rectangle {
             }
         }
     }
-    touch := TouchArea { clicked => { root.clicked(); } }
+    touch := TouchArea { mouse-cursor: MouseCursor.pointer; clicked => { root.clicked(); } }
 }
 
-// 信息条（浅蓝底 + info 图标）
+// 信息条（蓝底 + info 图标）
 export component InfoBanner inherits Rectangle {
     in property <string> text;
-    background: Theme.accent-soft;
+    background: Theme.info-banner-bg;
     border-radius: Theme.radius;
+    animate background { duration: 120ms; }
     HorizontalLayout {
-        padding: 14px;
+        padding-left: 14px;
+        padding-right: 14px;
+        padding-top: 10px;
+        padding-bottom: 10px;
         spacing: 10px;
         alignment: start;
         Icon {
@@ -115,20 +129,21 @@ export component InfoBanner inherits Rectangle {
             text: root.text;
             wrap: word-wrap;
             font-size: Theme.font-sm;
-            color: Theme.text-secondary;
+            color: Theme.info-banner-text;
+            animate color { duration: 120ms; }
         }
     }
 }
 
-// 主按钮（蓝）
+// 主按钮（蓝底 + 浅色字）
 export component PrimaryButton inherits Rectangle {
     in property <string> glyph;
     in property <string> text;
     in property <bool> enabled: true;
     callback clicked;
-    height: 44px;
+    height: 42px;
     border-radius: Theme.radius;
-    background: !enabled ? #a9c7e4
+    background: !root.enabled ? (Theme.dark ? #1a2a44 : #98bef6)
         : (touch.pressed ? Theme.accent-pressed : (touch.has-hover ? Theme.accent-hover : Theme.accent));
     animate background { duration: 100ms; }
     HorizontalLayout {
@@ -136,56 +151,117 @@ export component PrimaryButton inherits Rectangle {
         padding-right: 20px;
         spacing: 8px;
         alignment: center;
-        Icon { glyph: root.glyph; color: white; font-size: 16px; visible: root.glyph != ""; width: root.glyph != "" ? 16px : 0; }
-        Text { text: root.text; color: white; font-size: Theme.font; font-weight: 600; vertical-alignment: center; }
+        Icon {
+            glyph: root.glyph;
+            color: !root.enabled ? (Theme.dark ? #4a6fa5 : #ffffff) : #ffffff;
+            font-size: 16px;
+            visible: root.glyph != "";
+            width: root.glyph != "" ? 16px : 0;
+        }
+        Text {
+            text: root.text;
+            color: !root.enabled ? (Theme.dark ? #4a6fa5 : #ffffff) : #ffffff;
+            font-size: Theme.font;
+            font-weight: 600;
+            vertical-alignment: center;
+        }
     }
-    touch := TouchArea { enabled: root.enabled; clicked => { root.clicked(); } }
+    touch := TouchArea { enabled: root.enabled; mouse-cursor: root.enabled ? MouseCursor.pointer : MouseCursor.default; clicked => { root.clicked(); } }
 }
 
-// 次按钮（描边）
+// 代理启停二合一操作按钮（启动蓝 / 停止红）
+export component ProxyActionButton inherits Rectangle {
+    in property <bool> running;
+    callback clicked;
+    height: 42px;
+    border-radius: Theme.radius;
+    background: !root.running
+        ? (touch.pressed ? Theme.accent-pressed : (touch.has-hover ? Theme.accent-hover : Theme.accent))
+        : (touch.pressed ? #991b1b : (touch.has-hover ? #b91c1c : (Theme.dark ? #ef4444 : #dc2626)));
+    animate background { duration: 100ms; }
+    HorizontalLayout {
+        padding-left: 20px;
+        padding-right: 20px;
+        spacing: 8px;
+        alignment: center;
+        Icon {
+            glyph: root.running ? "\u{e71a}" : "\u{e768}";
+            color: #ffffff;
+            font-size: 16px;
+        }
+        Text {
+            text: root.running ? "停止代理" : "启动代理";
+            color: #ffffff;
+            font-size: Theme.font;
+            font-weight: 600;
+            vertical-alignment: center;
+        }
+    }
+    touch := TouchArea { mouse-cursor: MouseCursor.pointer; clicked => { root.clicked(); } }
+}
+
+// 次按钮（描边/浅灰底）
 export component SecondaryButton inherits Rectangle {
     in property <string> glyph;
     in property <string> text;
     in property <bool> enabled: true;
     callback clicked;
-    height: 44px;
+    height: 42px;
     border-radius: Theme.radius;
     border-width: 1px;
-    border-color: root.enabled ? Theme.input-border : #e0e4ea;
-    background: touch.has-hover && root.enabled ? #f3f6fa : Theme.card-bg;
-    animate background { duration: 100ms; }
+    border-color: root.enabled ? Theme.btn-secondary-border : Theme.btn-disabled-border;
+    background: !root.enabled ? Theme.btn-disabled-bg
+        : (touch.has-hover ? (Theme.dark ? #223044 : #edf2f8) : Theme.btn-secondary-bg);
+    animate background, border-color { duration: 100ms; }
     HorizontalLayout {
         padding-left: 18px;
         padding-right: 18px;
         spacing: 8px;
         alignment: center;
-        Icon { glyph: root.glyph; color: root.enabled ? Theme.text-secondary : Theme.text-tertiary; font-size: 15px; visible: root.glyph != ""; width: root.glyph != "" ? 15px : 0; }
-        Text { text: root.text; color: root.enabled ? Theme.text-primary : Theme.text-tertiary; font-size: Theme.font; font-weight: 600; vertical-alignment: center; }
+        Icon {
+            glyph: root.glyph;
+            color: root.enabled ? Theme.btn-secondary-text : Theme.btn-disabled-text;
+            font-size: 15px;
+            visible: root.glyph != "";
+            width: root.glyph != "" ? 15px : 0;
+        }
+        Text {
+            text: root.text;
+            color: root.enabled ? Theme.btn-secondary-text : Theme.btn-disabled-text;
+            font-size: Theme.font;
+            font-weight: 600;
+            vertical-alignment: center;
+        }
     }
-    touch := TouchArea { enabled: root.enabled; clicked => { root.clicked(); } }
+    touch := TouchArea { enabled: root.enabled; mouse-cursor: root.enabled ? MouseCursor.pointer : MouseCursor.default; clicked => { root.clicked(); } }
 }
 
 // 状态药丸（● 未运行 / 运行中）
 export component StatusPill inherits Rectangle {
     in property <bool> running;
-    height: 40px;
-    border-radius: 20px;
-    background: running ? #eaf6ea : Theme.danger-soft;
+    height: 38px;
+    border-radius: 19px;
+    background: running ? Theme.status-running-bg : Theme.status-inactive-bg;
+    animate background { duration: 120ms; }
     HorizontalLayout {
         padding-left: 16px;
         padding-right: 16px;
         spacing: 8px;
         alignment: center;
         Rectangle {
-            width: 10px; height: 10px; border-radius: 5px;
-            background: running ? Theme.success : Theme.danger;
+            width: 9px;
+            height: 9px;
+            border-radius: 4.5px;
+            y: (parent.height - self.height) / 2;
+            background: running ? Theme.status-running-text : Theme.status-inactive-text;
         }
         Text {
             text: running ? "运行中" : "未运行";
-            color: running ? Theme.success : Theme.danger;
+            color: running ? Theme.status-running-text : Theme.status-inactive-text;
             font-size: Theme.font;
             font-weight: 700;
             vertical-alignment: center;
+            animate color { duration: 120ms; }
         }
     }
 }
@@ -200,15 +276,16 @@ export component CheckBox inherits Rectangle {
         spacing: 8px;
         alignment: start;
         Rectangle {
-            width: 20px; height: 20px; y: 4px;
+            width: 18px; height: 18px; y: 5px;
             border-radius: 4px;
-            border-width: 1.5px;
-            border-color: root.checked ? Theme.accent : Theme.input-border;
-            background: root.checked ? Theme.accent : white;
+            border-width: root.checked ? 0px : 1.5px;
+            border-color: Theme.input-border;
+            background: root.checked ? Theme.accent : (Theme.dark ? #101824 : #ffffff);
+            animate background, border-color { duration: 100ms; }
             Icon {
                 glyph: "\u{e73e}";
                 color: white;
-                font-size: 13px;
+                font-size: 11px;
                 visible: root.checked;
             }
         }
@@ -217,9 +294,42 @@ export component CheckBox inherits Rectangle {
             vertical-alignment: center;
             font-size: Theme.font;
             color: Theme.text-primary;
+            animate color { duration: 100ms; }
         }
     }
-    TouchArea { clicked => { root.checked = !root.checked; root.toggled(root.checked); } }
+    TouchArea { mouse-cursor: MouseCursor.pointer; clicked => { root.checked = !root.checked; root.toggled(root.checked); } }
+}
+
+// 顶栏操作项（设置 / 帮助 / 主题切换）
+export component HeaderButton inherits Rectangle {
+    in property <string> glyph;
+    in property <string> text;
+    callback clicked;
+    height: 32px;
+    border-radius: 6px;
+    background: touch.has-hover ? (Theme.dark ? #ffffff14 : #0000000a) : transparent;
+    animate background { duration: 100ms; }
+    HorizontalLayout {
+        padding-left: 8px;
+        padding-right: 8px;
+        spacing: 6px;
+        alignment: center;
+        Icon {
+            glyph: root.glyph;
+            font-size: 16px;
+            color: touch.has-hover ? Theme.text-primary : Theme.text-secondary;
+            width: 18px;
+            animate color { duration: 100ms; }
+        }
+        Text {
+            text: root.text;
+            font-size: Theme.font;
+            color: touch.has-hover ? Theme.text-primary : Theme.text-secondary;
+            vertical-alignment: center;
+            animate color { duration: 100ms; }
+        }
+    }
+    touch := TouchArea { mouse-cursor: MouseCursor.pointer; clicked => { root.clicked(); } }
 }
 
 // 标题栏按钮（最小化/最大化/关闭）
@@ -228,7 +338,7 @@ export component CaptionButton inherits Rectangle {
     in property <bool> is-close;
     callback clicked;
     width: 46px;
-    background: touch.has-hover ? (is-close ? #c42b1c : #00000014) : transparent;
+    background: touch.has-hover ? (is-close ? #c42b1c : (Theme.dark ? #ffffff14 : #00000010)) : transparent;
     animate background { duration: 80ms; }
     Icon {
         glyph: root.glyph;
@@ -238,21 +348,19 @@ export component CaptionButton inherits Rectangle {
     touch := TouchArea { clicked => { root.clicked(); } }
 }
 
-// 输入框：白底 + 浅灰边框，聚焦时蓝色描边。
-// 不用 std-widgets 的 LineEdit：它跟随系统深浅色主题，系统为深色时会在白色卡片上变成白字白底（不可见）。
+// 输入框：深浅色底 + 灰边框，聚焦时蓝色描边。
 export component TextBox inherits Rectangle {
     in-out property <string> text <=> input.text;
     in property <string> placeholder;
     in property <bool> enabled: true;
     callback edited(string);
     callback accepted(string);
-    height: 40px;
+    height: 38px;
     border-radius: 6px;
-    border-width: input.has-focus ? 2px : 1px;
-    border-color: input.has-focus ? Theme.accent : Theme.input-border;
-    background: root.enabled ? Theme.input-bg : #f5f6f8;
-    animate border-color { duration: 100ms; }
-    // 放在 TextInput 之下：只接管内边距区域的点击（用于聚焦），不影响文字上的光标定位
+    border-width: input.has-focus ? 1.5px : 1px;
+    border-color: input.has-focus ? Theme.input-border-focus : Theme.input-border;
+    background: root.enabled ? Theme.input-bg : (Theme.dark ? #121926 : #f5f6f8);
+    animate border-color, background { duration: 100ms; }
     TouchArea { mouse-cursor: MouseCursor.text; clicked => { input.focus(); } }
     HorizontalLayout {
         padding-left: 12px;

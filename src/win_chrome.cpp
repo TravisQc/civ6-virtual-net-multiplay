@@ -26,6 +26,9 @@ constexpr UINT_PTR kSubclassId = 1;
 // DWMWA_WINDOW_CORNER_PREFERENCE / DWMWCP_ROUND（Windows 11；旧系统忽略该属性）
 constexpr DWORD kDwmCornerPreference = 33;
 constexpr DWORD kDwmCornerRound = 2;
+constexpr DWORD kDwmUseImmersiveDarkMode = 20;
+constexpr DWORD kDwmUseImmersiveDarkModeOld = 19;
+bool g_dark_mode = false;
 
 float scale_of(HWND h) { return GetDpiForWindow(h) / 96.0f; }
 
@@ -33,6 +36,12 @@ float scale_of(HWND h) { return GetDpiForWindow(h) / 96.0f; }
 // 幂等；Windows 10 及更早忽略该属性，返回值无需处理。
 void set_corners_rounded(HWND h) {
     DwmSetWindowAttribute(h, kDwmCornerPreference, &kDwmCornerRound, sizeof(kDwmCornerRound));
+}
+
+void apply_dark_mode(HWND h, bool dark) {
+    BOOL val = dark ? TRUE : FALSE;
+    DwmSetWindowAttribute(h, kDwmUseImmersiveDarkMode, &val, sizeof(val));
+    DwmSetWindowAttribute(h, kDwmUseImmersiveDarkModeOld, &val, sizeof(val));
 }
 
 // 命中测试：四周边缘 -> 缩放；标题栏 -> 系统拖动；标题栏右侧按钮与其余区域 -> 交给 Slint。
@@ -99,13 +108,14 @@ BOOL CALLBACK first_visible_window(HWND h, LPARAM out) {
     return FALSE;
 }
 
-// EnumThreadWindows 回调：对每个可见、尺寸非零的顶层窗口应用圆角。
+// EnumThreadWindows 回调：对每个可见、尺寸非零的顶层窗口应用圆角与沉浸式暗色属性。
 BOOL CALLBACK round_if_visible(HWND h, LPARAM) {
     if (!IsWindowVisible(h)) return TRUE;
     RECT r{};
     GetWindowRect(h, &r);
     if (r.right - r.left <= 0 || r.bottom - r.top <= 0) return TRUE;
     set_corners_rounded(h);
+    apply_dark_mode(h, g_dark_mode);
     return TRUE;
 }
 
@@ -122,6 +132,7 @@ bool attach_main_window(int title_height, int caption_buttons_width) {
     g_caption_buttons_width = caption_buttons_width;
 
     set_corners_rounded(g_hwnd);
+    apply_dark_mode(g_hwnd, g_dark_mode);
     SetWindowSubclass(g_hwnd, subclass_proc, kSubclassId, 0);
     // 让系统重新评估非客户区，使圆角与命中测试立即生效。
     SetWindowPos(g_hwnd, nullptr, 0, 0, 0, 0,
@@ -142,6 +153,15 @@ void minimize() {
 void toggle_maximize() {
     if (!attached()) return;
     ShowWindow(g_hwnd, IsZoomed(g_hwnd) ? SW_RESTORE : SW_MAXIMIZE);
+}
+
+void set_dark_mode(bool dark) {
+    g_dark_mode = dark;
+    if (attached()) {
+        apply_dark_mode(g_hwnd, dark);
+        SetWindowPos(g_hwnd, nullptr, 0, 0, 0, 0,
+                     SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+    }
 }
 
 }  // namespace civ6::chrome

@@ -1,16 +1,6 @@
 import { Theme, Icon } from "theme.slint";
-import { Card, ModeCard, InfoBanner, PrimaryButton, SecondaryButton, StatusPill, CheckBox, TextBox } from "components.slint";
+import { Card, ModeCard, InfoBanner, ProxyActionButton, SecondaryButton, StatusPill, TextBox, HeaderButton } from "components.slint";
 import { ScrollView } from "std-widgets.slint";
-
-// 小节标题（图标 + 文本）
-component SectionHeader inherits HorizontalLayout {
-    in property <string> glyph;
-    in property <string> title;
-    spacing: 10px;
-    alignment: start;
-    Icon { glyph: root.glyph; font-size: 20px; color: Theme.accent; width: 24px; }
-    Text { text: root.title; font-size: Theme.font-lg; font-weight: 700; color: Theme.text-primary; vertical-alignment: center; }
-}
 
 // 字段标签
 component FieldLabel inherits Text {
@@ -19,12 +9,14 @@ component FieldLabel inherits Text {
 }
 
 export component SettingsPage inherits Rectangle {
+    background: Theme.content-bg;
+    animate background { duration: 120ms; }
+
     in-out property <string> mode;             // "windivert" | "relay"
     in-out property <string> peer_vips;
     in-out property <string> server_vip;
     in-out property <string> client_ip;
     in-out property <string> ports;
-    in-out property <bool> verbose;
     in property <bool> running;
     in property <string> local_ips_hint;
 
@@ -33,93 +25,181 @@ export component SettingsPage inherits Rectangle {
     callback pick_process();
     callback open_settings();
     callback open_help();
-    callback verbose_changed(bool);
+    callback toggle_theme();
 
     VerticalLayout {
-        padding: 24px;
-        spacing: 16px;
+        padding-left: 24px;
+        padding-right: 24px;
+        padding-top: 16px;
+        padding-bottom: 16px;
+        spacing: 12px;
 
         // 页头
         HorizontalLayout {
             VerticalLayout {
                 horizontal-stretch: 0;
-                spacing: 4px;
-                Text { text: "代理设置"; font-size: Theme.font-title; font-weight: 800; color: Theme.text-primary; }
-                Text { text: "通过虚拟网络连接房间，与好友一起征服世界"; font-size: Theme.font; color: Theme.text-secondary; }
+                spacing: 3px;
+                Text {
+                    text: "代理设置";
+                    font-size: Theme.font-title;
+                    font-weight: 800;
+                    color: Theme.text-primary;
+                    animate color { duration: 120ms; }
+                }
+                Text {
+                    text: "通过虚拟网络连接房间，与好友一起征服世界";
+                    font-size: Theme.font;
+                    color: Theme.text-secondary;
+                    animate color { duration: 120ms; }
+                }
             }
             Rectangle { horizontal-stretch: 1; }  // spacer
             HorizontalLayout {
                 horizontal-stretch: 0;
-                spacing: 22px;
+                spacing: 12px;
                 alignment: end;
-                Rectangle {
-                    HorizontalLayout {
-                        spacing: 6px;
-                        Icon { glyph: "\u{e713}"; font-size: 18px; color: Theme.text-secondary; width: 20px; }
-                        Text { text: "设置"; font-size: Theme.font; color: Theme.text-secondary; vertical-alignment: center; }
-                    }
-                    TouchArea { clicked => { root.open_settings(); } }
+                HeaderButton {
+                    glyph: "\u{e713}";
+                    text: "设置";
+                    clicked => { root.open_settings(); }
                 }
-                Rectangle {
-                    HorizontalLayout {
-                        spacing: 6px;
-                        Icon { glyph: "\u{e897}"; font-size: 18px; color: Theme.text-secondary; width: 20px; }
-                        Text { text: "帮助"; font-size: Theme.font; color: Theme.text-secondary; vertical-alignment: center; }
-                    }
-                    TouchArea { clicked => { root.open_help(); } }
+                HeaderButton {
+                    glyph: "\u{e9ce}";
+                    text: "帮助";
+                    clicked => { root.open_help(); }
+                }
+                HeaderButton {
+                    glyph: Theme.dark ? "\u{e706}" : "\u{e708}";
+                    text: Theme.dark ? "浅色" : "深色";
+                    clicked => { root.toggle_theme(); }
                 }
             }
         }
 
-        // 可滚动内容（正常窗口高度下无需滚动）
+        // 内容区
         ScrollView {
             VerticalLayout {
-                spacing: 12px;
+                spacing: 10px;
                 alignment: start;
 
-                // 运行模式
+                // 运行模式卡片
                 Card {
                     VerticalLayout {
-                        padding: 16px;
-                        spacing: 12px;
-                        SectionHeader { glyph: "\u{e968}"; title: "运行模式"; }
+                        padding-left: 16px;
+                        padding-right: 16px;
+                        padding-top: 12px;
+                        padding-bottom: 12px;
+                        spacing: 10px;
+
+                        HorizontalLayout {
+                            spacing: 8px;
+                            alignment: start;
+                            Image {
+                                source: @image-url("assets/icon_network.svg");
+                                width: 18px;
+                                height: 18px;
+                                vertical-alignment: center;
+                            }
+                            Text {
+                                text: "运行模式";
+                                font-size: Theme.font-lg;
+                                font-weight: 700;
+                                color: Theme.text-primary;
+                                vertical-alignment: center;
+                            }
+                        }
+
                         HorizontalLayout {
                             spacing: 12px;
                             ModeCard {
                                 horizontal-stretch: 1;
-                                glyph: "\u{e977}";
-                                title: "同机模式（本机就是游戏机）";
+                                title: "同机模式 (本机就是游戏机)";
                                 subtitle: "需管理员权限";
                                 selected: root.mode == "windivert";
                                 clicked => { root.mode = "windivert"; }
+
+                                if root.mode == "windivert": Image {
+                                    source: @image-url("assets/icon_monitor_accent.svg");
+                                    width: 28px; height: 28px;
+                                    vertical-alignment: center;
+                                }
+                                if root.mode != "windivert" && !Theme.dark: Image {
+                                    source: @image-url("assets/icon_monitor_light.svg");
+                                    width: 28px; height: 28px;
+                                    vertical-alignment: center;
+                                }
+                                if root.mode != "windivert" && Theme.dark: Image {
+                                    source: @image-url("assets/icon_monitor_dark.svg");
+                                    width: 28px; height: 28px;
+                                    vertical-alignment: center;
+                                }
                             }
                             ModeCard {
                                 horizontal-stretch: 1;
-                                glyph: "\u{e968}";
-                                title: "中转模式（独立中转机）";
+                                title: "中转模式 (独立中转机)";
                                 subtitle: "作为房间中转服务器运行";
                                 selected: root.mode == "relay";
                                 clicked => { root.mode = "relay"; }
+
+                                if root.mode == "relay": Image {
+                                    source: @image-url("assets/icon_server_accent.svg");
+                                    width: 28px; height: 28px;
+                                    vertical-alignment: center;
+                                }
+                                if root.mode != "relay" && !Theme.dark: Image {
+                                    source: @image-url("assets/icon_server_light.svg");
+                                    width: 28px; height: 28px;
+                                    vertical-alignment: center;
+                                }
+                                if root.mode != "relay" && Theme.dark: Image {
+                                    source: @image-url("assets/icon_server_dark.svg");
+                                    width: 28px; height: 28px;
+                                    vertical-alignment: center;
+                                }
                             }
                         }
                     }
                 }
 
-                // 同机模式字段：对端虚拟 IP + 右侧信息条（用 if 而非 visible，隐藏时不占布局空间）
+                // 同机模式字段：对端虚拟 IP + 右侧信息条
                 if root.mode == "windivert": Card {
                     HorizontalLayout {
-                        padding: 16px;
+                        padding-left: 16px;
+                        padding-right: 16px;
+                        padding-top: 12px;
+                        padding-bottom: 12px;
                         spacing: 16px;
                         VerticalLayout {
                             horizontal-stretch: 1;
-                            spacing: 10px;
+                            spacing: 8px;
                             alignment: start;
-                            SectionHeader { glyph: "\u{e701}"; title: "对端虚拟 IP（逗号分隔）"; }
+                            HorizontalLayout {
+                                spacing: 8px;
+                                alignment: start;
+                                Icon {
+                                    glyph: "\u{e701}";
+                                    font-size: 18px;
+                                    color: Theme.accent;
+                                    width: 20px;
+                                    vertical-alignment: center;
+                                }
+                                Text {
+                                    text: "对端虚拟 IP (逗号分隔)";
+                                    font-size: Theme.font-lg;
+                                    font-weight: 700;
+                                    color: Theme.text-primary;
+                                    vertical-alignment: center;
+                                }
+                            }
                             TextBox {
                                 text <=> root.peer_vips;
                                 placeholder: "192.168.10.147,192.168.10.160";
                             }
-                            Text { text: "示例: 192.168.10.147,192.168.10.160"; font-size: Theme.font-sm; color: Theme.text-tertiary; }
+                            Text {
+                                text: "示例: 192.168.10.147,192.168.10.160";
+                                font-size: Theme.font-sm;
+                                color: Theme.text-tertiary;
+                            }
                         }
                         InfoBanner {
                             width: 38%;
@@ -131,9 +211,28 @@ export component SettingsPage inherits Rectangle {
                 // 中转模式字段：服务端 VIP + 客户端真实 IP
                 if root.mode == "relay": Card {
                     VerticalLayout {
-                        padding: 16px;
-                        spacing: 12px;
-                        SectionHeader { glyph: "\u{e968}"; title: "中转参数"; }
+                        padding-left: 16px;
+                        padding-right: 16px;
+                        padding-top: 12px;
+                        padding-bottom: 12px;
+                        spacing: 10px;
+                        HorizontalLayout {
+                            spacing: 8px;
+                            alignment: start;
+                            Image {
+                                source: @image-url("assets/icon_network.svg");
+                                width: 18px;
+                                height: 18px;
+                                vertical-alignment: center;
+                            }
+                            Text {
+                                text: "中转参数";
+                                font-size: Theme.font-lg;
+                                font-weight: 700;
+                                color: Theme.text-primary;
+                                vertical-alignment: center;
+                            }
+                        }
                         HorizontalLayout {
                             spacing: 16px;
                             VerticalLayout {
@@ -155,9 +254,29 @@ export component SettingsPage inherits Rectangle {
                 // 端口
                 Card {
                     VerticalLayout {
-                        padding: 16px;
-                        spacing: 10px;
-                        SectionHeader { glyph: "\u{e977}"; title: "端口（逗号分隔）"; }
+                        padding-left: 16px;
+                        padding-right: 16px;
+                        padding-top: 12px;
+                        padding-bottom: 12px;
+                        spacing: 8px;
+                        HorizontalLayout {
+                            spacing: 8px;
+                            alignment: start;
+                            Icon {
+                                glyph: "\u{e7f4}";
+                                font-size: 18px;
+                                color: Theme.accent;
+                                width: 20px;
+                                vertical-alignment: center;
+                            }
+                            Text {
+                                text: "端口 (逗号分隔)";
+                                font-size: Theme.font-lg;
+                                font-weight: 700;
+                                color: Theme.text-primary;
+                                vertical-alignment: center;
+                            }
+                        }
                         HorizontalLayout {
                             spacing: 12px;
                             TextBox {
@@ -166,13 +285,16 @@ export component SettingsPage inherits Rectangle {
                                 placeholder: "62900";
                             }
                             SecondaryButton {
-                                height: 40px;
                                 glyph: "\u{e8fd}";
                                 text: "从程序选择…";
                                 clicked => { root.pick_process(); }
                             }
                         }
-                        Text { text: root.local_ips_hint; font-size: Theme.font-sm; color: Theme.text-secondary; }
+                        Text {
+                            text: root.local_ips_hint;
+                            font-size: Theme.font-sm;
+                            color: Theme.text-secondary;
+                        }
                     }
                 }
             }
@@ -182,23 +304,15 @@ export component SettingsPage inherits Rectangle {
         HorizontalLayout {
             spacing: 12px;
             alignment: start;
-            PrimaryButton {
-                glyph: "\u{e768}";
-                text: "启动代理";
-                enabled: !root.running;
-                clicked => { root.start_proxy(); }
-            }
-            SecondaryButton {
-                glyph: "\u{e71a}";
-                text: "停止代理";
-                enabled: root.running;
-                clicked => { root.stop_proxy(); }
-            }
-            Rectangle { width: 1px; background: Theme.card-border; }
-            CheckBox {
-                label: "详细日志";
-                checked <=> root.verbose;
-                toggled(v) => { root.verbose_changed(v); }
+            ProxyActionButton {
+                running: root.running;
+                clicked => {
+                    if root.running {
+                        root.stop_proxy();
+                    } else {
+                        root.start_proxy();
+                    }
+                }
             }
             Rectangle {}  // spacer
             StatusPill { running: root.running; }

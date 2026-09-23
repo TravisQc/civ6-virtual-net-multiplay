@@ -1,11 +1,16 @@
 import { Theme, Icon } from "theme.slint";
 import { LogLine } from "structs.slint";
+import { CheckBox } from "components.slint";
 import { ScrollView } from "std-widgets.slint";
 
 export component LogsPage inherits Rectangle {
     in property <[LogLine]> lines;
+    in-out property <bool> verbose;
+    callback verbose_changed(bool);
 
-    // VS Code 深色日志配色（对齐 Python 版 tag 颜色）
+    background: Theme.content-bg;
+    animate background { duration: 120ms; }
+
     function level-color(level: string) -> color {
         if (level == "info") { return #4ec9b0; }
         if (level == "warn") { return #dcdcaa; }
@@ -14,36 +19,59 @@ export component LogsPage inherits Rectangle {
     }
 
     VerticalLayout {
-        padding: 28px;
-        spacing: 18px;
+        padding: 24px;
+        spacing: 16px;
 
-        VerticalLayout {
-            spacing: 4px;
-            Text { text: "运行日志"; font-size: Theme.font-title; font-weight: 800; color: Theme.text-primary; }
-            Text { text: "代理运行过程中的实时输出"; font-size: Theme.font; color: Theme.text-secondary; }
+        // 页头（标题 + 详细日志复选框）
+        HorizontalLayout {
+            VerticalLayout {
+                horizontal-stretch: 1;
+                spacing: 4px;
+                Text {
+                    text: "运行日志";
+                    font-size: Theme.font-title;
+                    font-weight: 800;
+                    color: Theme.text-primary;
+                    animate color { duration: 120ms; }
+                }
+                Text {
+                    text: "代理运行过程中的实时输出";
+                    font-size: Theme.font;
+                    color: Theme.text-secondary;
+                    animate color { duration: 120ms; }
+                }
+            }
+            CheckBox {
+                label: "详细日志";
+                checked <=> root.verbose;
+                toggled(v) => { root.verbose_changed(v); }
+            }
         }
 
         Rectangle {
-            background: #1e1e1e;
-            border-radius: Theme.radius;
+            background: Theme.dark ? #0f1726 : #1e1e1e;
+            border-radius: Theme.radius-lg;
+            border-width: 1px;
+            border-color: Theme.card-border;
             clip: true;
+            animate background, border-color { duration: 120ms; }
             ScrollView {
                 VerticalLayout {
-                    padding: 12px;
-                    spacing: 2px;
+                    padding: 14px;
+                    spacing: 4px;
                     for line in root.lines: HorizontalLayout {
                         spacing: 8px;
                         alignment: start;
                         Text {
                             text: "[" + line.time + "]";
                             font-family: "Consolas";
-                            font-size: 14px;
-                            color: #808080;
+                            font-size: 13px;
+                            color: #8590a2;
                         }
                         Text {
                             text: line.text;
                             font-family: "Consolas";
-                            font-size: 14px;
+                            font-size: 13px;
                             color: level-color(line.level);
                             wrap: word-wrap;
                             horizontal-stretch: 1;

@@ -12,6 +12,7 @@ struct Config {
     std::string client_ip = "10.0.0.10";
     std::string peer_vips = "";
     std::string ports = "62900";
+    bool dark_mode = false;
 };
 
 // 返回 exe 同目录下的 civ6proxy_config.json 完整路径。

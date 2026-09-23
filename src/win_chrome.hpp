@@ -18,5 +18,6 @@ void round_thread_windows();
 
 void minimize();
 void toggle_maximize();
+void set_dark_mode(bool dark);
 
 }  // namespace civ6::chrome

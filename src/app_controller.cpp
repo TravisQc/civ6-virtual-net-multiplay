@@ -81,6 +81,8 @@ void AppController::setup() {
     window_->set_client_ip(slint::SharedString(cfg_.client_ip));
     window_->set_peer_vips(slint::SharedString(cfg_.peer_vips));
     window_->set_ports(slint::SharedString(cfg_.ports));
+    window_->set_dark_mode(cfg_.dark_mode);
+    chrome::set_dark_mode(cfg_.dark_mode);
     window_->set_verbose(false);
     window_->set_running(false);
     window_->set_version(slint::SharedString("1.2 修正版"));
@@ -105,6 +107,11 @@ void AppController::setup() {
     window_->on_pick_process([this] { on_pick_process(); });
     window_->on_verbose_changed([this](bool v) {
         if (engine_) engine_->set_verbose(v);
+    });
+    window_->on_theme_changed([this](bool dark) {
+        cfg_.dark_mode = dark;
+        chrome::set_dark_mode(dark);
+        save_current_config();
     });
     window_->on_open_settings([] {
         show_info("设置", "配置会在启动代理或关闭窗口时自动保存到程序目录的 civ6proxy_config.json。");
@@ -245,6 +252,7 @@ void AppController::save_current_config() {
     cfg_.client_ip = std::string(window_->get_client_ip());
     cfg_.peer_vips = std::string(window_->get_peer_vips());
     cfg_.ports = std::string(window_->get_ports());
+    cfg_.dark_mode = window_->get_dark_mode();
     save_config(cfg_);
 }
 

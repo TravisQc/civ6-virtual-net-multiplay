@@ -12,15 +12,29 @@ component InfoRow inherits HorizontalLayout {
 export component AboutPage inherits Rectangle {
     in property <string> version;
 
+    background: Theme.content-bg;
+    animate background { duration: 120ms; }
+
     VerticalLayout {
-        padding: 28px;
-        spacing: 18px;
+        padding: 24px;
+        spacing: 16px;
         alignment: start;
 
         VerticalLayout {
             spacing: 4px;
-            Text { text: "关于软件"; font-size: Theme.font-title; font-weight: 800; color: Theme.text-primary; }
-            Text { text: "文明6 虚拟组网联机代理"; font-size: Theme.font; color: Theme.text-secondary; }
+            Text {
+                text: "关于软件";
+                font-size: Theme.font-title;
+                font-weight: 800;
+                color: Theme.text-primary;
+                animate color { duration: 120ms; }
+            }
+            Text {
+                text: "文明6 虚拟组网联机代理";
+                font-size: Theme.font;
+                color: Theme.text-secondary;
+                animate color { duration: 120ms; }
+            }
         }
 
         Card {
@@ -29,7 +43,7 @@ export component AboutPage inherits Rectangle {
                 spacing: 14px;
                 HorizontalLayout {
                     spacing: 14px;
-                    Icon { glyph: "\u{e774}"; font-size: 40px; color: Theme.accent; width: 48px; }
+                    Icon { glyph: "\u{e774}"; font-size: 38px; color: Theme.accent; width: 44px; }
                     VerticalLayout {
                         alignment: center;
                         spacing: 2px;
@@ -37,7 +51,7 @@ export component AboutPage inherits Rectangle {
                         Text { text: "让文明的世界连接得更近"; font-size: Theme.font-sm; color: Theme.text-secondary; }
                     }
                 }
-                Rectangle { height: 1px; background: Theme.card-border; }
+                Rectangle { height: 1px; background: Theme.divider; }
                 InfoRow { key: "版本"; value: root.version; }
                 InfoRow { key: "许可"; value: "MIT License"; }
                 InfoRow { key: "原作者"; value: "chenxi65535（核心转发逻辑）"; }
