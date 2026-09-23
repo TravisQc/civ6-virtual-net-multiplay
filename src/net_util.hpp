@@ -24,6 +24,12 @@ std::vector<int> parse_ports(const std::string& text);
 // 校验 IPv4 字符串；无效抛 std::invalid_argument（label 用于组织错误文案）。
 void validate_ip(const std::string& ip, const std::string& label);
 
+// 将逗号或中文逗号分隔的 IP 字符串切分为去重且非空的 IP 列表。
+std::vector<std::string> split_peer_vips(const std::string& text);
+
+// 校验单条对端虚拟 IP。若有效返回空字符串并在 out_normalized_ip 输出规范化 IP；若无效返回中文错误文案。
+std::string validate_peer_ip(const std::string& ip, std::string* out_normalized_ip = nullptr);
+
 // 返回本机可能的局域网 IPv4（过滤 127.*，升序去重）。
 std::vector<std::string> list_local_ips();
 

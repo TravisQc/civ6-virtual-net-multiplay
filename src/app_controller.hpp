@@ -30,6 +30,7 @@ private:
     void set_running(bool running);
     void save_current_config();
     void restore_window_placement();
+    void sync_peer_vips_from_model();
     void pump_logs();
     void append_log(LogLevel level, const std::string& msg);
 
@@ -39,6 +40,7 @@ private:
     std::unique_ptr<Engine> engine_;
 
     std::shared_ptr<slint::VectorModel<LogLine>> log_model_;
+    std::shared_ptr<slint::VectorModel<slint::SharedString>> peer_ip_model_;
     slint::Timer log_timer_;
 
     // 进程选择器（保活）

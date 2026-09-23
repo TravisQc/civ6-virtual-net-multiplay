@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <ctime>
 #include <cstring>
+#include <set>
 #include <stdexcept>
 
 #include "divert.hpp"
@@ -18,10 +19,12 @@
 #define NOMINMAX
 #endif
 #include <windows.h>
+#include <ws2tcpip.h>
 
 namespace civ6 {
 
 namespace {
+
 
 std::wstring utf8_to_wide(const std::string& s) {
     if (s.empty()) return {};
@@ -83,6 +86,14 @@ void AppController::setup() {
     window_->set_server_vip(slint::SharedString(cfg_.server_vip));
     window_->set_client_ip(slint::SharedString(cfg_.client_ip));
     window_->set_peer_vips(slint::SharedString(cfg_.peer_vips));
+
+    peer_ip_model_ = std::make_shared<slint::VectorModel<slint::SharedString>>();
+    auto initial_peers = split_peer_vips(cfg_.peer_vips);
+    for (const auto& ip : initial_peers) {
+        peer_ip_model_->push_back(slint::SharedString(ip));
+    }
+    window_->set_peer_ip_list(peer_ip_model_);
+
     window_->set_ports(slint::SharedString(cfg_.ports));
     window_->set_dark_mode(cfg_.dark_mode);
     chrome::set_dark_mode(cfg_.dark_mode);
@@ -124,6 +135,35 @@ void AppController::setup() {
                   "同机模式：本机就是游戏机，需以管理员运行，并在“对端虚拟 IP”里填入其他玩家的虚拟 IP。\n\n"
                   "中转模式：在不运行游戏的独立设备上运行，填服务端虚拟 IP 与客户端真实局域网 IP。\n\n"
                   "端口默认 62900；可用“从程序选择…”读取占用 UDP 端口的程序。");
+    });
+
+    // 对端 IP 增删回调
+    window_->on_add_peer_ip([this](slint::SharedString input) -> slint::SharedString {
+        std::string clean_ip;
+        std::string err = validate_peer_ip(std::string(input), &clean_ip);
+        if (!err.empty()) {
+            return slint::SharedString(err);
+        }
+
+        for (std::size_t i = 0; i < peer_ip_model_->row_count(); ++i) {
+            auto row = peer_ip_model_->row_data(i);
+            if (row && std::string(*row) == clean_ip) {
+                return slint::SharedString("该 IP 地址已在列表中");
+            }
+        }
+
+        peer_ip_model_->push_back(slint::SharedString(clean_ip));
+        sync_peer_vips_from_model();
+        save_current_config();
+        return slint::SharedString("");
+    });
+
+    window_->on_remove_peer_ip([this](int idx) {
+        if (idx >= 0 && idx < static_cast<int>(peer_ip_model_->row_count())) {
+            peer_ip_model_->erase(static_cast<std::size_t>(idx));
+            sync_peer_vips_from_model();
+            save_current_config();
+        }
     });
 
     // 窗口控制（拖动/缩放由 win_chrome 的 WM_NCHITTEST 交给系统处理）
@@ -249,6 +289,19 @@ void AppController::on_pick_process() {
 }
 
 void AppController::set_running(bool running) { window_->set_running(running); }
+
+void AppController::sync_peer_vips_from_model() {
+    std::string s;
+    for (std::size_t i = 0; i < peer_ip_model_->row_count(); ++i) {
+        auto row = peer_ip_model_->row_data(i);
+        if (row) {
+            if (!s.empty()) s += ",";
+            s += std::string(*row);
+        }
+    }
+    cfg_.peer_vips = s;
+    window_->set_peer_vips(slint::SharedString(s));
+}
 
 void AppController::save_current_config() {
     cfg_.mode = std::string(window_->get_mode());

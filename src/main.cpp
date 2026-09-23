@@ -78,34 +78,31 @@ int main(int argc, char** argv) {
         snap_timer = std::make_shared<slint::Timer>();
         auto step = std::make_shared<int>(0);
         snap_timer->start(slint::TimerMode::Repeated, std::chrono::milliseconds(300), [window, snap_timer, step]() {
+            auto snap = window->window().take_snapshot();
             if (*step == 0) {
-                auto snap = window->window().take_snapshot();
                 if (snap) {
                     save_bmp("snapshot_light.bmp", snap->width(), snap->height(),
                              reinterpret_cast<const uint8_t*>(snap->begin()));
                 }
-                window->set_running(true);
-                *step = 1;
-            } else if (*step == 1) {
-                auto snap = window->window().take_snapshot();
-                if (snap) {
-                    save_bmp("snapshot_running.bmp", snap->width(), snap->height(),
-                             reinterpret_cast<const uint8_t*>(snap->begin()));
-                }
-                window->set_running(false);
                 window->set_dark_mode(true);
                 civ6::chrome::set_dark_mode(true);
-                *step = 2;
-            } else if (*step == 2) {
-                auto snap = window->window().take_snapshot();
+                *step = 1;
+            } else if (*step == 1) {
                 if (snap) {
                     save_bmp("snapshot_dark.bmp", snap->width(), snap->height(),
                              reinterpret_cast<const uint8_t*>(snap->begin()));
                 }
+                window->set_show_add_ip_dialog(true);
+                *step = 2;
+            } else if (*step == 2) {
+                if (snap) {
+                    save_bmp("snapshot_dialog.bmp", snap->width(), snap->height(),
+                             reinterpret_cast<const uint8_t*>(snap->begin()));
+                }
+                window->set_show_add_ip_dialog(false);
                 window->set_current_page(1);
                 *step = 3;
             } else if (*step == 3) {
-                auto snap = window->window().take_snapshot();
                 if (snap) {
                     save_bmp("snapshot_logs.bmp", snap->width(), snap->height(),
                              reinterpret_cast<const uint8_t*>(snap->begin()));

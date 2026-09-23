@@ -1,5 +1,5 @@
 import { Theme, Icon } from "theme.slint";
-import { Card, ModeCard, InfoBanner, ProxyActionButton, SecondaryButton, StatusPill, TextBox, HeaderButton } from "components.slint";
+import { Card, ModeCard, InfoBanner, ProxyActionButton, SecondaryButton, StatusPill, TextBox, HeaderButton, IpTag, AddTagButton } from "components.slint";
 import { ScrollView } from "std-widgets.slint";
 
 // 字段标签
@@ -14,6 +14,7 @@ export component SettingsPage inherits Rectangle {
 
     in-out property <string> mode;             // "windivert" | "relay"
     in-out property <string> peer_vips;
+    in property <[string]> peer_ip_list;
     in-out property <string> server_vip;
     in-out property <string> client_ip;
     in-out property <string> ports;
@@ -26,6 +27,8 @@ export component SettingsPage inherits Rectangle {
     callback open_settings();
     callback open_help();
     callback toggle_theme();
+    callback open_add_ip_dialog();
+    callback remove_peer_ip(int);
 
     VerticalLayout {
         padding-left: 24px;
@@ -184,19 +187,26 @@ export component SettingsPage inherits Rectangle {
                                     vertical-alignment: center;
                                 }
                                 Text {
-                                    text: "对端虚拟 IP (逗号分隔)";
+                                    text: "对端虚拟 IP";
                                     font-size: Theme.font-lg;
                                     font-weight: 700;
                                     color: Theme.text-primary;
                                     vertical-alignment: center;
                                 }
                             }
-                            TextBox {
-                                text <=> root.peer_vips;
-                                placeholder: "192.168.10.147,192.168.10.160";
+                            HorizontalLayout {
+                                spacing: 8px;
+                                alignment: start;
+                                for ip[idx] in root.peer_ip_list: IpTag {
+                                    text: ip;
+                                    remove => { root.remove_peer_ip(idx); }
+                                }
+                                AddTagButton {
+                                    clicked => { root.open_add_ip_dialog(); }
+                                }
                             }
                             Text {
-                                text: "示例: 192.168.10.147,192.168.10.160";
+                                text: "点击 + 添加其他玩家的虚拟局域网 IP 地址";
                                 font-size: Theme.font-sm;
                                 color: Theme.text-tertiary;
                             }

@@ -99,6 +99,47 @@ void validate_ip(const std::string& ip_in, const std::string& label) {
         throw std::invalid_argument(label + " 格式无效: " + ip);
 }
 
+std::vector<std::string> split_peer_vips(const std::string& text) {
+    std::vector<std::string> result;
+    std::set<std::string> seen;
+    for (const auto& tok : split_commas(text)) {
+        if (tok.empty() || seen.count(tok)) continue;
+        seen.insert(tok);
+        result.push_back(tok);
+    }
+    return result;
+}
+
+std::string validate_peer_ip(const std::string& ip_in, std::string* out_normalized_ip) {
+    std::string ip = ip_in;
+    std::size_t b = ip.find_first_not_of(" \t\r\n");
+    std::size_t e = ip.find_last_not_of(" \t\r\n");
+    ip = (b == std::string::npos) ? std::string{} : ip.substr(b, e - b + 1);
+    if (ip.empty()) {
+        return "请输入 IP 地址";
+    }
+    if (ip.find('/') != std::string::npos) {
+        return "请输入单个主机的 IPv4 地址，无需掩码前缀";
+    }
+    in_addr addr{};
+    if (InetPtonA(AF_INET, ip.c_str(), &addr) != 1) {
+        return "请输入有效的 IPv4 地址 (例如 192.168.10.147)";
+    }
+    UINT32 h = ntohl(addr.s_addr);
+    bool multicast = (h >= 0xE0000000u && h <= 0xEFFFFFFFu);
+    bool loopback = ((h >> 24) == 127);
+    bool unspecified = (h == 0);
+    if (multicast || unspecified || loopback) {
+        return "不能使用环回、组播或未指定地址";
+    }
+    char norm_ip[INET_ADDRSTRLEN] = {0};
+    InetNtopA(AF_INET, &addr, norm_ip, sizeof(norm_ip));
+    if (out_normalized_ip) {
+        *out_normalized_ip = norm_ip;
+    }
+    return "";
+}
+
 std::vector<std::string> list_local_ips() {
     std::set<std::string> ips;
 

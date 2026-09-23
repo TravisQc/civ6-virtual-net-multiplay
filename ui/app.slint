@@ -1,5 +1,5 @@
 import { Theme, Icon } from "theme.slint";
-import { NavItem, CaptionButton } from "components.slint";
+import { NavItem, CaptionButton, AddIpDialog } from "components.slint";
 import { LogLine } from "structs.slint";
 import { SettingsPage } from "settings-page.slint";
 import { LogsPage } from "logs-page.slint";
@@ -53,6 +53,7 @@ export component AppWindow inherits Window {
     // 配置数据（与 C++ 双向绑定）
     in-out property <string> mode: "windivert";
     in-out property <string> peer_vips;
+    in property <[string]> peer_ip_list;
     in-out property <string> server_vip;
     in-out property <string> client_ip;
     in-out property <string> ports: "62900";
@@ -63,6 +64,11 @@ export component AppWindow inherits Window {
     in property <[LogLine]> log_lines;
     in-out property <int> current_page: 0;    // 0 设置 / 1 日志 / 2 关于
 
+    // 添加 IP 弹窗控制
+    in-out property <bool> show_add_ip_dialog: false;
+    in-out property <string> add_ip_input: "";
+    in-out property <string> add_ip_error: "";
+
     // 行为回调
     callback start_proxy();
     callback stop_proxy();
@@ -71,6 +77,8 @@ export component AppWindow inherits Window {
     callback open_settings();
     callback open_help();
     callback theme_changed(bool);
+    callback add_peer_ip(string) -> string;
+    callback remove_peer_ip(int);
     // 窗口控制（C++ 用 Win32 处理）
     callback minimize();
     callback maximize();
@@ -158,6 +166,7 @@ export component AppWindow inherits Window {
                 if root.current_page == 0: SettingsPage {
                     mode <=> root.mode;
                     peer_vips <=> root.peer_vips;
+                    peer_ip_list: root.peer_ip_list;
                     server_vip <=> root.server_vip;
                     client_ip <=> root.client_ip;
                     ports <=> root.ports;
@@ -168,6 +177,12 @@ export component AppWindow inherits Window {
                     pick_process => { root.pick_process(); }
                     open_settings => { root.open_settings(); }
                     open_help => { root.open_help(); }
+                    open_add_ip_dialog => {
+                        root.add_ip_input = "";
+                        root.add_ip_error = "";
+                        root.show_add_ip_dialog = true;
+                    }
+                    remove_peer_ip(idx) => { root.remove_peer_ip(idx); }
                     toggle_theme => {
                         root.dark_mode = !root.dark_mode;
                         Palette.color-scheme = root.dark_mode ? ColorScheme.dark : ColorScheme.light;
@@ -185,4 +200,26 @@ export component AppWindow inherits Window {
             }
         }
     }
+
+    // 模态弹窗：添加对端虚拟 IP
+    if root.show_add_ip_dialog: AddIpDialog {
+        input_text <=> root.add_ip_input;
+        error_text: root.add_ip_error;
+        cancel => {
+            root.show_add_ip_dialog = false;
+            root.add_ip_input = "";
+            root.add_ip_error = "";
+        }
+        confirm => {
+            let err = root.add_peer_ip(root.add_ip_input);
+            if err == "" {
+                root.show_add_ip_dialog = false;
+                root.add_ip_input = "";
+                root.add_ip_error = "";
+            } else {
+                root.add_ip_error = err;
+            }
+        }
+    }
 }
+
