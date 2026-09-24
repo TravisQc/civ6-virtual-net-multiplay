@@ -24,6 +24,14 @@ set(SLINT_FEATURE_RENDERER_FEMTOVG ON CACHE BOOL "" FORCE)
 set(SLINT_FEATURE_RENDERER_SOFTWARE ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(Slint)
 
+# ---------------------------------------------------------------- 程序图标
+# 由 ui/assets/app_icon.png 生成的 res/app_icon.ico 通过 .rc 嵌入 exe，
+# 使可执行文件 / 快捷方式 / 卸载项显示应用图标（Slint 的窗口图标是运行时另行设置）。
+set(CIV6_APP_ICON_PATH "${CMAKE_CURRENT_SOURCE_DIR}/res/app_icon.ico")
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/res/app.rc.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/app.rc" @ONLY)
+
 # ---------------------------------------------------------------- 目标
 add_executable(civ6proxy
     src/main.cpp
@@ -36,6 +44,7 @@ add_executable(civ6proxy
     src/config.cpp
     src/win_chrome.cpp
     app.manifest        # MSVC 会自动嵌入清单（DPI/兼容性；UAC 级别见下方 /MANIFESTUAC）
+    ${CMAKE_CURRENT_BINARY_DIR}/app.rc  # 程序图标资源（见上方 configure_file 生成）
 )
 
 target_include_directories(civ6proxy PRIVATE

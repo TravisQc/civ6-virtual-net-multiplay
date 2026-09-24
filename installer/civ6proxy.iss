@@ -43,6 +43,8 @@ OutputDir=..\dist
 OutputBaseFilename=civ6proxy-setup-{#AppVersion}
 UninstallDisplayName={#AppName}
 UninstallDisplayIcon={app}\{#AppExeName}
+; 安装程序自身（Setup.exe）及“程序和功能”里的图标（与主程序同一图标）。
+SetupIconFile=..\res\app_icon.ico
 ; 保留“选择安装目录”页（用于纯 ASCII 路径校验），不禁用该页。
 
 [Languages]

@@ -1,0 +1,3 @@
+// 由 CMake 从 app.rc.in 生成（@CIV6_APP_ICON_PATH@ 替换为 res/app_icon.ico 的绝对路径）。
+// 资源 ID 1 的 ICON 即成为可执行文件在资源管理器 / 快捷方式 / 任务栏中的默认图标。
+1 ICON "@CIV6_APP_ICON_PATH@"

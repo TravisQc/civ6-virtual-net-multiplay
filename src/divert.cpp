@@ -165,9 +165,12 @@ void DivertForwarder::start() {
         std::string source = route_source(peer);
         if (source == peer)
             throw std::invalid_argument("对端列表中包含本机地址：" + peer);
+        // 源地址不是 ZeroTier 网卡地址时不再阻断启动：ZeroTier 托管路由（Managed Route）等场景下，
+        // 到对端的转发可经物理网卡源地址走 ZeroTier 并正常送达。仅记一条警告以便排查误填。
         if (!vip_set.count(source))
-            throw std::invalid_argument("到 " + peer + " 的路由使用 " + source +
-                                        "，没有经过 ZeroTier。请检查虚拟 IP。");
+            log_(LogLevel::Warn, "到 " + peer + " 的路由源地址为 " + source +
+                                     "，不是 ZeroTier 网卡地址；若已配置 ZeroTier 托管路由可忽略，"
+                                     "否则请检查对端虚拟 IP 是否填错。");
         sources_[peer] = source;
     }
 
