@@ -18,11 +18,34 @@ FetchContent_Declare(
     GIT_TAG        v1.18.1
     SOURCE_SUBDIR  api/cpp
 )
-# 只需 winit 后端 + Fluent 风格。
-set(SLINT_FEATURE_BACKEND_WINIT ON CACHE BOOL "" FORCE)
-set(SLINT_FEATURE_RENDERER_FEMTOVG ON CACHE BOOL "" FORCE)
-set(SLINT_FEATURE_RENDERER_SOFTWARE ON CACHE BOOL "" FORCE)
+# 后端/渲染器保持 Slint v1.18.1 默认（winit 后端 + FemtoVG + Software 渲染器；
+# Skia/Qt/Vello 默认不编入），无需显式开启。
+# 关闭本项目未使用的子系统，避免把死代码编进 slint_cpp.dll（见 openspec/changes/harden-release-binaries）。
+set(SLINT_FEATURE_INTERPRETER   OFF CACHE BOOL "" FORCE)  # 用 AOT 编译（slint_target_sources），运行时不需要解释器
+set(SLINT_FEATURE_TESTING       OFF CACHE BOOL "" FORCE)  # 未使用实验测试 API
+set(SLINT_FEATURE_SYSTEM_TRAY   OFF CACHE BOOL "" FORCE)  # UI 无托盘图标
+set(SLINT_FEATURE_ACCESSIBILITY OFF CACHE BOOL "" FORCE)  # 目标用户无需读屏支持
+
+# 发布加固（防逆向 + 瘦身）：对 slint_cpp 的 Rust release profile 施加
+# strip 符号 + fat LTO + 单 codegen 单元（panic=abort 由 Slint 自带 release profile 提供）。
+# 经独立 cargo 配置文件用 --config 注入，避免内联引号在 MSBuild 下被吞（见 design.md D2）。
+file(WRITE "${CMAKE_BINARY_DIR}/cargo-hardening.toml"
+"# 由 CMake 生成，请勿手改。见 openspec/changes/harden-release-binaries。\n[profile.release]\nstrip = \"symbols\"\nlto = \"fat\"\ncodegen-units = 1\n")
+set(SLINT_LIBRARY_CARGO_FLAGS "--config;${CMAKE_BINARY_DIR}/cargo-hardening.toml" CACHE STRING "" FORCE)
+
 FetchContent_MakeAvailable(Slint)
+
+# 把开发者主目录与项目路径从所有 crate 的嵌入路径（panic 字符串里的 .cargo\registry、
+# 源文件路径）中抹掉 —— 去掉用户名/绝对路径泄露。作用于 slint_cpp 及其全部 Rust 依赖（见 design.md D3）。
+file(TO_NATIVE_PATH "$ENV{USERPROFILE}" _civ6_home_native)
+file(TO_NATIVE_PATH "${CMAKE_SOURCE_DIR}" _civ6_root_native)
+string(REPLACE "\\" "/" _civ6_home_unix "${_civ6_home_native}")
+string(REPLACE "\\" "/" _civ6_root_unix "${_civ6_root_native}")
+corrosion_add_target_rustflags(slint_cpp
+    "--remap-path-prefix=${_civ6_home_native}=~"
+    "--remap-path-prefix=${_civ6_home_unix}=~"
+    "--remap-path-prefix=${_civ6_root_native}=."
+    "--remap-path-prefix=${_civ6_root_unix}=.")
 
 # ---------------------------------------------------------------- 程序图标
 # 由 ui/assets/app_icon.png 生成的 res/app_icon.ico 通过 .rc 嵌入 exe，
@@ -74,7 +97,7 @@ if(MSVC)
         set(_civ6_uac "level='asInvoker' uiAccess='false'")
     endif()
     set_target_properties(civ6proxy PROPERTIES
-        LINK_FLAGS "/SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup /MANIFESTUAC:\"${_civ6_uac}\"")
+        LINK_FLAGS "/SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup /MANIFESTUAC:\"${_civ6_uac}\" /PDBALTPATH:%_PDB%")
     target_compile_options(civ6proxy PRIVATE /utf-8 /W3)
 endif()
 
