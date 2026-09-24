@@ -1,4 +1,4 @@
-// 配置读写：JSON 文件放在 exe 同目录（civ6proxy_config.json）。
+// 配置读写：JSON 文件放在用户可写的 %APPDATA%\civ6proxy（civ6proxy_config.json）。
 // 对应 app.py 的 load_config / save_config / DEFAULT_CONFIG。
 #pragma once
 
@@ -21,7 +21,7 @@ struct Config {
     int window_height = 0;
 };
 
-// 返回 exe 同目录下的 civ6proxy_config.json 完整路径。
+// 返回 %APPDATA%\civ6proxy 下的 civ6proxy_config.json 完整路径。
 std::wstring config_path();
 
 // 读取配置；缺失/损坏时返回默认值（对齐 Python 的容错）。

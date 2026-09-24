@@ -76,7 +76,7 @@ add_custom_command(TARGET civ6proxy POST_BUILD
         $<TARGET_RUNTIME_DLLS:civ6proxy> $<TARGET_FILE_DIR:civ6proxy>
     COMMAND_EXPAND_LISTS)
 
-# 2) WinDivert 驱动（运行时需与 exe 同目录，程序会再复制到稳定英文目录）
+# 2) WinDivert 驱动（运行时需与 exe 同目录，直接从安装目录加载）
 add_custom_command(TARGET civ6proxy POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         ${CMAKE_CURRENT_SOURCE_DIR}/third_party/windivert/WinDivert64.dll
@@ -101,4 +101,36 @@ if(CIV6_BUILD_TESTS)
         target_compile_options(civ6_tests PRIVATE /utf-8)
     endif()
     add_test(NAME civ6_tests COMMAND civ6_tests)
+endif()
+
+# ---------------------------------------------------------------- 安装包（Inno Setup）
+# 一键从构建产物生成安装包：cmake --build build --config Release --target installer
+# 需安装 Inno Setup 6（提供命令行编译器 ISCC.exe）；未安装时不生成 installer 目标。
+find_program(CIV6_ISCC
+    NAMES ISCC
+    HINTS
+        "C:/Program Files/Inno Setup 7"
+        "C:/Program Files (x86)/Inno Setup 7"
+        "$ENV{ProgramFiles}/Inno Setup 7"
+        "$ENV{LOCALAPPDATA}/Programs/Inno Setup 7"
+        "C:/Program Files (x86)/Inno Setup 6"
+        "C:/Program Files/Inno Setup 6"
+        "$ENV{ProgramFiles}/Inno Setup 6"
+        "$ENV{LOCALAPPDATA}/Programs/Inno Setup 6"
+    DOC "Inno Setup 命令行编译器 ISCC.exe")
+
+if(CIV6_ISCC)
+    add_custom_target(installer
+        COMMAND "${CIV6_ISCC}"
+            "/DAppVersion=1.2"
+            "/DAppSourceDir=$<TARGET_FILE_DIR:civ6proxy>"
+            "/DWinDivertDir=${CMAKE_CURRENT_SOURCE_DIR}/third_party/windivert"
+            "${CMAKE_CURRENT_SOURCE_DIR}/installer/civ6proxy.iss"
+        DEPENDS civ6proxy
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+        COMMENT "使用 Inno Setup 生成安装包（输出到 dist/）..."
+        VERBATIM
+        USES_TERMINAL)
+else()
+    message(STATUS "未找到 Inno Setup (ISCC.exe)：不提供 installer 目标。安装 Inno Setup 6 后重新配置 CMake 即可启用。")
 endif()

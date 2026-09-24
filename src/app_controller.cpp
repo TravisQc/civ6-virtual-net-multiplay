@@ -11,6 +11,7 @@
 #include "icons.hpp"
 #include "proxy.hpp"
 #include "win_chrome.hpp"
+#include "windivert_api.hpp"
 
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -128,7 +129,7 @@ void AppController::setup() {
         save_current_config();
     });
     window_->on_open_settings([] {
-        show_info("设置", "配置会在启动代理或关闭窗口时自动保存到程序目录的 civ6proxy_config.json。");
+        show_info("设置", "配置会在启动代理或关闭窗口时自动保存到 %APPDATA%\\civ6proxy\\civ6proxy_config.json。");
     });
     window_->on_open_help([] {
         show_info("帮助",
@@ -354,8 +355,12 @@ void AppController::append_log(LogLevel level, const std::string& msg) {
 }
 
 void AppController::shutdown() {
+    // 时序：先关闭 WinDivert 句柄（engine 的 stop() 内部已 Close），再注销内核服务。
     if (engine_ && engine_->running()) engine_->stop();
     engine_.reset();
+    // 退出自清：注销 WinDivert 服务，使非运行态下不残留已注册服务与被占用的驱动文件。
+    // 失败仅记日志、不阻断退出（残留将于下次重启由系统清理）。
+    unregister_windivert_service(log_bus_.as_fn());
     save_current_config();
 }
 

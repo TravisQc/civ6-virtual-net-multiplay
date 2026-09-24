@@ -112,7 +112,7 @@ using WinDivertHelperParsePacket_t = BOOL(WINAPI*)(
     UINT8* pProtocol, void** ppIcmpHdr, void** ppIcmpv6Hdr, void** ppTcpHdr, void** ppUdpHdr,
     void** ppData, UINT* pDataLen, void** ppNext, UINT* pNextLen);
 
-// 动态加载器。首次 load() 时把 dll/sys 复制到稳定英文目录并从那里加载。
+// 动态加载器：从可执行文件所在（安装）目录加载 WinDivert64.dll。
 class WinDivertApi {
 public:
     WinDivertOpen_t Open = nullptr;
@@ -123,7 +123,7 @@ public:
     WinDivertHelperCalcChecksums_t CalcChecksums = nullptr;
     WinDivertHelperParsePacket_t ParsePacket = nullptr;
 
-    // 复制驱动到稳定目录并加载 DLL。失败抛 std::runtime_error（含可读中文原因）。
+    // 从安装目录加载 WinDivert64.dll。失败抛 std::runtime_error（含可读中文原因）。
     void load(const LogFn& log);
     bool loaded() const { return module_ != nullptr; }
 
@@ -131,10 +131,10 @@ private:
     HMODULE module_ = nullptr;
 };
 
-// 返回稳定的纯 ASCII 驱动目录：%ProgramData%\civ6proxy\windivert（非 ASCII 则退回 C:\ProgramData）。
-std::wstring stable_driver_dir();
-
 // 当前进程是否以管理员运行。
 bool is_admin();
+
+// 停止并注销 WinDivert 内核服务（退出自清 / 卸载复用同一序列）。失败仅记日志，不抛异常。
+void unregister_windivert_service(const LogFn& log);
 
 }  // namespace civ6

@@ -1,7 +1,10 @@
 #include "config.hpp"
 
 #include <windows.h>
+#include <shlobj.h>
 
+#include <cstdlib>
+#include <filesystem>
 #include <fstream>
 
 #include "../third_party/nlohmann/json.hpp"
@@ -10,13 +13,32 @@ using nlohmann::json;
 
 namespace civ6 {
 
+namespace {
+
+// 可变配置目录：用户可写的 %APPDATA%\civ6proxy
+// （安装目录位于 Program Files 下，对普通权限只读，故配置迁出程序目录）。
+std::wstring config_dir() {
+    std::wstring dir;
+    wchar_t buf[MAX_PATH] = {0};
+    if (SUCCEEDED(SHGetFolderPathW(nullptr, CSIDL_APPDATA, nullptr, SHGFP_TYPE_CURRENT, buf)))
+        dir = buf;
+    if (dir.empty()) {
+        // 兜底：环境变量 APPDATA。
+        wchar_t* env = nullptr;
+        std::size_t len = 0;
+        if (_wdupenv_s(&env, &len, L"APPDATA") == 0 && env) {
+            dir = env;
+            free(env);
+        }
+    }
+    if (dir.empty()) dir = L".";
+    return dir + L"\\civ6proxy";
+}
+
+}  // namespace
+
 std::wstring config_path() {
-    wchar_t exe[MAX_PATH] = {0};
-    GetModuleFileNameW(nullptr, exe, MAX_PATH);
-    std::wstring path(exe);
-    std::size_t slash = path.find_last_of(L"\\/");
-    std::wstring dir = (slash == std::wstring::npos) ? L"." : path.substr(0, slash);
-    return dir + L"\\civ6proxy_config.json";
+    return config_dir() + L"\\civ6proxy_config.json";
 }
 
 Config load_config() {
@@ -55,6 +77,8 @@ void save_config(const Config& cfg) {
     j["window_y"] = cfg.window_y;
     j["window_width"] = cfg.window_width;
     j["window_height"] = cfg.window_height;
+    std::error_code ec;
+    std::filesystem::create_directories(config_dir(), ec);  // 确保 %APPDATA%\civ6proxy 存在
     std::ofstream out(config_path(), std::ios::binary);
     if (!out) return;
     out << j.dump(2);

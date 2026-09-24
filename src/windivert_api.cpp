@@ -1,8 +1,5 @@
 #include "windivert_api.hpp"
 
-#include <shlobj.h>
-
-#include <cstdlib>
 #include <filesystem>
 #include <stdexcept>
 
@@ -28,54 +25,30 @@ bool is_ascii(const std::wstring& s) {
 
 }  // namespace
 
-std::wstring stable_driver_dir() {
-    // %ProgramData%；非 ASCII 则退回 C:\ProgramData（对齐 _stable_driver_dir）。
-    std::wstring base;
-    wchar_t* env = nullptr;
-    std::size_t len = 0;
-    if (_wdupenv_s(&env, &len, L"ProgramData") == 0 && env) {
-        base = env;
-        free(env);
-    }
-    if (base.empty() || !is_ascii(base)) base = L"C:\\ProgramData";
-    return base + L"\\civ6proxy\\windivert";
-}
-
 void WinDivertApi::load(const LogFn& log) {
     if (module_) return;
 
-    std::wstring dst = stable_driver_dir();
-    std::wstring dll_path = dst + L"\\WinDivert64.dll";
-    try {
-        fs::create_directories(dst);
-        // 从 exe 同目录复制 dll/sys 到稳定英文目录（若尚不存在）。
-        std::wstring src = exe_dir();
-        for (const wchar_t* fn : {L"WinDivert64.dll", L"WinDivert64.sys"}) {
-            fs::path s = fs::path(src) / fn;
-            fs::path d = fs::path(dst) / fn;
-            if (fs::exists(s) && !fs::exists(d))
-                fs::copy_file(s, d);
-        }
-        if (log) log(LogLevel::Info, "WinDivert 驱动目录: " +
-                                         std::filesystem::path(dst).string());
-    } catch (const std::exception& e) {
-        if (log) log(LogLevel::Warn,
-                     std::string("复制 WinDivert 驱动到稳定目录失败，将回退默认路径: ") + e.what());
-    }
-
-    // 从稳定目录加载；失败则回退 exe 同目录。
+    // 驱动随应用安装到安装目录，运行时直接从可执行文件所在目录加载
+    // （安装器已把安装路径约束为纯 ASCII，不再复制到 %ProgramData% 中转）。
+    std::wstring dir = exe_dir();
+    std::wstring dll_path = dir + L"\\WinDivert64.dll";
     module_ = LoadLibraryW(dll_path.c_str());
     if (!module_) {
-        std::wstring fallback = exe_dir() + L"\\WinDivert64.dll";
-        module_ = LoadLibraryW(fallback.c_str());
-    }
-    if (!module_) {
         DWORD err = GetLastError();
-        throw std::runtime_error(
+        std::string msg =
             "加载 WinDivert64.dll 失败 (WinError " + std::to_string(err) + ")。\n\n"
             "常见原因：未以管理员身份运行；杀毒软件拦截/删除了 WinDivert 驱动；"
-            "或驱动文件缺失（应与本程序放在同一目录）。");
+            "或驱动文件缺失（应与本程序放在同一目录）。";
+        // 加载失败且自身路径含非 ASCII 字符时，明确提示改用英文路径（不再自动复制到别处）。
+        if (!is_ascii(dir)) {
+            msg += "\n\n另外，检测到本程序所在路径包含非英文（非 ASCII）字符，"
+                   "这可能导致 WinDivert 驱动无法加载。请将本程序安装或移动到"
+                   "仅含英文字母、数字的路径（例如 C:\\civ6proxy）后重试。";
+        }
+        throw std::runtime_error(msg);
     }
+    if (log)
+        log(LogLevel::Info, "从安装目录加载 WinDivert 驱动: " + fs::path(dir).string());
 
     auto get = [&](const char* name) -> FARPROC {
         FARPROC p = GetProcAddress(module_, name);
@@ -102,6 +75,53 @@ bool is_admin() {
         FreeSid(group);
     }
     return admin == TRUE;
+}
+
+void unregister_windivert_service(const LogFn& log) {
+    // 停止并删除 WinDivertOpen 自动注册的 "WinDivert" 内核服务。
+    // 任何一步失败都只记日志、不抛异常——残留服务会在下次系统重启时自动清理。
+    SC_HANDLE scm = OpenSCManagerW(nullptr, nullptr, SC_MANAGER_CONNECT);
+    if (!scm) {
+        if (log) log(LogLevel::Warn, "注销 WinDivert 服务：打开服务管理器失败 (WinError " +
+                                         std::to_string(GetLastError()) + ")");
+        return;
+    }
+    SC_HANDLE svc = OpenServiceW(scm, L"WinDivert",
+                                 SERVICE_STOP | SERVICE_QUERY_STATUS | DELETE);
+    if (!svc) {
+        DWORD err = GetLastError();
+        // 服务不存在视为已清理，属正常路径，不记为告警。
+        if (err != ERROR_SERVICE_DOES_NOT_EXIST && log)
+            log(LogLevel::Warn, "注销 WinDivert 服务：打开服务失败 (WinError " +
+                                    std::to_string(err) + ")");
+        CloseServiceHandle(scm);
+        return;
+    }
+
+    SERVICE_STATUS status{};
+    if (!ControlService(svc, SERVICE_CONTROL_STOP, &status)) {
+        DWORD err = GetLastError();
+        // 服务本就未运行 (ERROR_SERVICE_NOT_ACTIVE) 可忽略，继续尝试删除。
+        if (err != ERROR_SERVICE_NOT_ACTIVE && log)
+            log(LogLevel::Warn, "停止 WinDivert 服务失败 (WinError " + std::to_string(err) +
+                                    ")，仍尝试删除服务");
+    }
+
+    if (DeleteService(svc)) {
+        if (log) log(LogLevel::Info, "WinDivert 内核服务已停止并注销");
+    } else {
+        DWORD err = GetLastError();
+        // 已标记删除 (ERROR_SERVICE_MARKED_FOR_DELETE) 也视为成功路径。
+        if (err == ERROR_SERVICE_MARKED_FOR_DELETE) {
+            if (log) log(LogLevel::Info, "WinDivert 内核服务已标记为删除");
+        } else if (log) {
+            log(LogLevel::Warn, "删除 WinDivert 服务失败 (WinError " + std::to_string(err) +
+                                    ")，将于下次系统重启由系统自动清理");
+        }
+    }
+
+    CloseServiceHandle(svc);
+    CloseServiceHandle(scm);
 }
 
 }  // namespace civ6
